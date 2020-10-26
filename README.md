@@ -1,14 +1,14 @@
 ```
-        ███╗   ███╗███╗   ██╗███████╗
-        ████╗ ████║████╗  ██║██╔════╝
-        ██╔████╔██║██╔██╗ ██║███████╗
-        ██║╚██╔╝██║██║╚██╗██║╚════██║
-        ██║ ╚═╝ ██║██║ ╚████║███████║
-        ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝            
+                        ███╗   ███╗███╗   ██╗███████╗
+                        ████╗ ████║████╗  ██║██╔════╝
+                        ██╔████╔██║██╔██╗ ██║███████╗
+                        ██║╚██╔╝██║██║╚██╗██║╚════██║
+                        ██║ ╚═╝ ██║██║ ╚████║███████║
+                        ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝            
 
-        # Monitor New Subdomain
-        # @omarelfarsaoui
-        # 1.0     
+                        # Monitor New Subdomain
+                        # @omarelfarsaoui
+                        # 1.0     
 ```
 # monitor-new-subdomain
 
@@ -24,7 +24,7 @@
 MNS needs some dependencies, to install them on your 
 
 ```
-$ git clone 
+$ git clone https://github.com/elfarsaouiomar/monitor-new-subdomain.git
 $ cd monitor-new-subdomain/
 $ pip3 install -r requirements.txt
 
@@ -32,37 +32,37 @@ $ pip3 install -r requirements.txt
 
 ### Usage
 
-** add domain to monitor. E.g: domain.com
+**add domain to monitor. E.g: domain.com**
 ```
 python3 check-new-subdomain.py -a 
 ```
 
-** list all domain in database
+**list all domain in database**
 ```
 python3 check-new-subdomain.py -l
 ```
 
-** get all subdomain for specific domain
+**get all subdomain for specific domain**
 ```
 python3 check-new-subdomain.py -L domain.com
 ```
 
-** search fo new subdomain for all domains
+**search fo new subdomain for all domains**
 ```
 python3 check-new-subdomain.py -m
 ```
 
-** delete domain
+**delete domain**
 ```
 python3 check-new-subdomain.py -d
 ```
 
-** send notification via slack 
+**send notification via slack**
 ```
 python3 check-new-subdomain.py -s
 ```
 
-** send notification via telegram 
+**send notification via telegram**
 ```
 python3 check-new-subdomain.py -t
 ```
