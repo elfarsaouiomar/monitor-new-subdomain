@@ -99,7 +99,7 @@ python3 check-new-subdomain.py -t
  * add more subdomain resources
     * Certspotter
     * Virustotal
-    * Sublist3r
+    * ~~Sublist3r~~
     * Facebook **
     * Spyse (CertDB) *
     * Bufferover
