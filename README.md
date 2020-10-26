@@ -97,3 +97,16 @@ python3 check-new-subdomain.py -t
  * add output folder
  * add Docker
  * add more subdomain resources
+    * Certspotter
+    * Crt.sh Database or Crt.sh HTTP API
+    * Virustotal
+    * Sublist3r
+    * Facebook **
+    * Spyse (CertDB) *
+    * Bufferover
+    * Threatcrowd
+    * Virustotal with apikey **
+    * AnubisDB
+    * Urlscan.io
+    * SecurityTrails **
+    * Threatminer
