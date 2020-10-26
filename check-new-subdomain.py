@@ -137,14 +137,25 @@ class SubDomainMonitoring:
 
         return newSubdomains
 
+
+    def getFormSublister(self, domain):
+        url = "https://api.sublist3r.com/search.php?domain={}".format(domain)
+        return get(url).json()
+ 
     def getdomain(self, domain):
+        resultSubdomains = dict()
+        resultSubdomains['domain'] = domain 
+        resultSubdomains["subdomains"] = list(set(self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain)))
+
+        return resultSubdomains
+
+    def getFromCrt(self, domain):
         """
             take domain as string
             check crt.sh for
             retrun a list of subdomain
         """
-        resultSubdomains = dict()
-        resultSubdomains['domain'] = domain
+        resultSubdomains = list()
         try:
             base_url = "https://crt.sh/?q={}&output=json"
             victim = "%25.{}".format(domain)
@@ -158,7 +169,7 @@ class SubDomainMonitoring:
                 subdomains = set()
                 for subdomain in data:
                     subdomains.add(subdomain["name_value"].lower())
-                resultSubdomains["subdomains"] = self.parseCrtResponse(sorted(subdomains))
+                resultSubdomains = self.parseCrtResponse(sorted(subdomains))
             return resultSubdomains
 
         except KeyboardInterrupt:
@@ -254,6 +265,7 @@ class SubDomainMonitoring:
                     else:
                         self.db._update(domain, diff)
                         print(colored("[+] Update new {0} subdomain ".format(diffLength), "green"))
+                        for i in diff:print(i)
                         for subdomian in diff:
                             self.scanSubdomain(subdomian)
 
@@ -274,7 +286,7 @@ class SubDomainMonitoring:
         :return:
         """
         for domain in self.db._findAll():
-            print(colored("[+] {}".format(domain.get('domain')), "green"))
+            print(colored("[+] {}".format(domain.get('domain')), "green"), colored("{0}".format(len(domain.get('subdomains'))), "green"))
 
     def getSubdomains(self, domain):
         target = self.db._findOne(domain=domain)
@@ -291,10 +303,6 @@ class SubDomainMonitoring:
             print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['blink']))
             thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
             thread.start()
-
-            #thread.join()
-            #result = self.getdomain(domain.get('domain'))
-            #self.compaire(result)
 
     def initArgparse(self):
         parser = argparse.ArgumentParser(description='Simple tools to monitoring new subdomain')
