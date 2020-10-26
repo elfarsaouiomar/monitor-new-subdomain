@@ -94,11 +94,10 @@ python3 check-new-subdomain.py -t
 ## inspired from https://github.com/yassineaboukir/sublert
 
 ### Todo
- * add output folder
+ * add output file
  * add Docker
  * add more subdomain resources
     * Certspotter
-    * Crt.sh Database or Crt.sh HTTP API
     * Virustotal
     * Sublist3r
     * Facebook **
