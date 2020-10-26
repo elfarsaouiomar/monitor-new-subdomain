@@ -67,6 +67,12 @@ python3 check-new-subdomain.py -s
 python3 check-new-subdomain.py -t
 ```
 
+## example
+
+![Image of Yaktocat](https://i.ibb.co/CKL3Hw0/target.png)
+
+![Image of Yaktocat](https://i.ibb.co/6ZNWtJS/Screenshot-from-2020-10-26-14-27-24.png
+)
 
 
 ### Todo
