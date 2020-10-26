@@ -13,7 +13,7 @@ from config import *
 from termcolor import colored
 import threading
 
-# disable packages warnings
+# disable requests warnings
 requests.packages.urllib3.disable_warnings()
 
 class Notify:
