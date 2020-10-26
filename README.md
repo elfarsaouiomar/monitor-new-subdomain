@@ -17,8 +17,8 @@
  * python3 
  * MongoDB *[how to install mongodb](https://www.digitalocean.com/community/tutorials/how-to-install-mongodb-on-ubuntu-18-04)*
  * vps (aws free account is enough) *[Create aws account ](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)*
- * Slack workspace (Free) *[Create Slack Webhook URL](https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack)*
- * Telegram bot *[Create Telegram bot](https://medium.com/@xabaras/sending-a-message-to-a-telegram-channel-the-easy-way-eb0a0b32968)*
+ * Slack workspace (Free) *[Create Slack Webhook URL](https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack)* (optional)
+ * Telegram bot *[Create Telegram bot](https://medium.com/@xabaras/sending-a-message-to-a-telegram-channel-the-easy-way-eb0a0b32968)* (optional)
 
 ### Intallation
 
