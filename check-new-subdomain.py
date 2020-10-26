@@ -4,6 +4,7 @@ version = "1.0"
 
 import argparse
 from requests import post, get
+import requests.packages.urllib3
 from json import loads, dumps
 import logging
 import dns.resolver
@@ -11,6 +12,9 @@ from pymongo import MongoClient
 from config import *
 from termcolor import colored
 import threading
+
+# disable packages warnings
+requests.packages.urllib3.disable_warnings()
 
 class Notify:
     """
