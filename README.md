@@ -24,7 +24,7 @@
 
 MNS needs some dependencies, to install them on your 
 
-```
+```bash
 $ git clone https://github.com/elfarsaouiomar/monitor-new-subdomain.git
 $ cd monitor-new-subdomain/
 $ pip3 install -r requirements.txt
@@ -34,12 +34,12 @@ $ pip3 install -r requirements.txt
 ### Usage
 
 **add domain to monitor. E.g: domain.com**
-```
+```bash
 python3 check-new-subdomain.py -a 
 ```
 
 **list all domain in database**
-```
+```bash
 python3 check-new-subdomain.py -l
 ```
 
@@ -49,7 +49,7 @@ python3 check-new-subdomain.py -L domain.com
 ```
 
 **search fo new subdomain for all domains**
-```
+```bash
 python3 check-new-subdomain.py -m
 ```
 
@@ -59,12 +59,12 @@ python3 check-new-subdomain.py -d
 ```
 
 **send notification via slack**
-```
+```bash
 python3 check-new-subdomain.py -s
 ```
 
 **send notification via telegram**
-```
+```bash
 python3 check-new-subdomain.py -t
 ```
 
@@ -91,6 +91,7 @@ python3 check-new-subdomain.py -t
 ## Feedback and issues
 ***[Create a new release](https://github.com/elfarsaouiomar/monitor-new-subdomain/releases/new)***
 
+## inspired from https://github.com/yassineaboukir/sublert
 
 ### Todo
  * add Docker
