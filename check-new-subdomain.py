@@ -11,7 +11,8 @@ import dns.resolver
 from pymongo import MongoClient
 from config import *
 from termcolor import colored
-
+import threading
+from time import sleep
 
 class Notify:
     """
@@ -22,31 +23,47 @@ class Notify:
 
         try:
             telegramUrl = "https://api.telegram.org/bot{0}/sendMessage".format(telegramToken)
-            post(telegramUrl, params={'text': dumps(message), 'chat_id': chatId, 'parse_mode': 'Markdown'},
+            req  = post(telegramUrl, params={'text': dumps(message), 'chat_id': chatId, 'parse_mode': 'Markdown'},
                  headers={'Content-Type': 'application/json'})
-        except Exception as e:
-            raise Exception("error while sending Telegram message", e)
+            if req.status_code != 200:
+                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code),  "red"))
+                
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "red"))
+            exit(0)
 
+        except Exception as e:
+            print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
     """
     send message via slack
     """
 
     def viaSlack(self, message):
         try:
-            data = {'text': message}
-            post(WHslack, data=dumps(data), headers={'Content-Type': 'application/json'})
+            req = post(WHslack, json={'text': ':new: {0}'.format(message)}, headers={'Content-Type': 'application/json'})
+            if req.status_code != 200:
+                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code),  "red"))
+            if req.status_code == 429:
+                print(colored("[!] Api Rate limit : ",  "red"))
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "blue"))
+            exit(0)
+
         except Exception as e:
-            raise Exception("error while sending slack message", e)
+            print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
 
 
 class ConnToDb:
+    """
+    Connection to mongodb 
+    """
     client = MongoClient(dbHost, dbPort)
     db = client['MonitoringSubdomain']
     collection = db['subdomains']
 
     def _findAll(self):
         """
-        all subdomain in db
+        get all subdomain
         :return:
         """
         return self.collection.find()
@@ -65,7 +82,7 @@ class ConnToDb:
         :param domain:
         :return:
         """
-        self.collection.update({"domain": domain}, {"$pushAll": {"subdomains": newSubbdomain}})
+        self.collection.update_one({"domain": domain}, {"$pushAll": {"subdomains": newSubbdomain}})
 
     def _findOne(self, domain):
         """
@@ -158,7 +175,7 @@ class SubDomainMonitoring:
         dnsResolver.nameservers = ['8.8.8.8', '8.8.4.4']
 
         dnsResult = dict()
-        dnsResult['subdomain'] = subdomain
+        dnsResult['new subdomains '] = subdomain
         try:
             for qtype in ['A', 'CNAME']:
                 answers = dns.resolver.resolve(subdomain, qtype, raise_on_no_answer=False)
@@ -174,6 +191,8 @@ class SubDomainMonitoring:
                     cname_records = [str(i) for i in answers.rrset]
                     dnsResult["CNAME"] = cname_records[0]
 
+            #target=self.notify, args=(dnsResult,)
+            
             self.notify(dnsResult)
 
         except KeyboardInterrupt:
@@ -216,7 +235,7 @@ class SubDomainMonitoring:
             target = self.db._findOne(domain=domain)  # get all subdomian by domian name
 
             if target is None:
-                print(colored("[+] Insert {0} for  {1}".format(len(newsubDomain), domain), "green"))
+                print(colored("[+] Insert  subdomain {0} for {1}".format(len(newsubDomain), domain), "green"))
                 self.db._add(target=subdomians)
 
             else:
@@ -227,8 +246,7 @@ class SubDomainMonitoring:
                     diffLength = len(diff)
 
                     if diffLength == 0:
-                        message = "0  subdomains found for {0}".format(domain)
-                        print(colored("[!] {}".format(message), "blue"))
+                        message = "unfortunately i don't found any new subdomain for {0} good look next time".format(domain)
                         self.notify(message)
 
                     else:
@@ -268,9 +286,13 @@ class SubDomainMonitoring:
 
     def monitor(self):
         for domain in self.db._findAll():
-            print(colored("[+] Checking {0} ".format(domain.get('domain'), "green")))
-            result = self.getdomain(domain.get('domain'))
-            self.compaire(result)
+            print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['blink']))
+            thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
+            thread.start()
+
+            #thread.join()
+            #result = self.getdomain(domain.get('domain'))
+            #self.compaire(result)
 
     def initArgparse(self):
         parser = argparse.ArgumentParser(description='Simple tools to monitoring new subdomain')
@@ -319,16 +341,33 @@ class SubDomainMonitoring:
             self.monitor()
 
 
+def banner():
+    BANNER = """
+
+        ███╗   ███╗███╗   ██╗███████╗
+        ████╗ ████║████╗  ██║██╔════╝
+        ██╔████╔██║██╔██╗ ██║███████╗
+        ██║╚██╔╝██║██║╚██╗██║╚════██║
+        ██║ ╚═╝ ██║██║ ╚████║███████║
+        ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝                       
+    # {0}
+    # {1}
+    # {2}                         
+    """
+    print(colored(BANNER.format("Monitor New Subdomain","@omarelfarsaoui",version),'red'))
+
+
 if __name__ == "__main__":
     try:
+        banner()
         subdomainMonitpring = SubDomainMonitoring()
         args = subdomainMonitpring.initArgparse()
         subdomainMonitpring.main(args)
+        
 
     except KeyboardInterrupt:
-        print(colored("[!] Ctrl+c detected", "red"))
+        print(colored("[!] Ctrl+c detected", "blue"))
         exit(0)
 
     except Exception as error:
-        print(colored("[!] {0}".format(error), "blue"))
-        raise Exception(error)
+        print(colored("[!] {0}".format(error), "red"))
