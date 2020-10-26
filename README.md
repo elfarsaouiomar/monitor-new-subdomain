@@ -8,7 +8,7 @@
 
                         # Monitor New Subdomain
                         # @omarelfarsaoui
-                        # 1.0     
+                        # version 1.0     
 ```
 # monitor-new-subdomain
 
@@ -69,9 +69,19 @@ python3 check-new-subdomain.py -t
 
 ## example
 
-![Image of Yaktocat](https://i.ibb.co/CKL3Hw0/target.png)
+**list all domains**
+![subdomain monitor](https://i.ibb.co/6ZNWtJS/Screenshot-from-2020-10-26-14-27-24.png
+)
 
-![Image of Yaktocat](https://i.ibb.co/6ZNWtJS/Screenshot-from-2020-10-26-14-27-24.png
+**subdomain monitor new subdomain**
+![subdomain monitor](https://i.ibb.co/TYN3hRg/Screenshot-from-2020-10-26-15-00-34.png)
+
+**mongoDB result**
+![subdomain monitor](https://i.ibb.co/CKL3Hw0/target.png)
+
+
+**notification telegram**
+![subdomain monitor](https://i.ibb.co/L8shfJG/Screenshot-from-2020-10-26-15-02-13.png
 )
 
 

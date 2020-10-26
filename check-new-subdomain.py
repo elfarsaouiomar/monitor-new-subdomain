@@ -350,7 +350,7 @@ def banner():
         ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝                       
     # {0}
     # {1}
-    # {2}                         
+    # version {2}                         
     """
     print(colored(BANNER.format("Monitor New Subdomain","@omarelfarsaoui",version),'red'))
 
