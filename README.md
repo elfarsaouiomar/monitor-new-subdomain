@@ -88,6 +88,9 @@ python3 check-new-subdomain.py -t
 
 ![subdomain monitor](https://i.ibb.co/L8shfJG/Screenshot-from-2020-10-26-15-02-13.png)
 
+## Feedback and issues
+***[Create a new release](https://github.com/elfarsaouiomar/monitor-new-subdomain/releases/new)***
+
 
 ### Todo
  * add Docker
