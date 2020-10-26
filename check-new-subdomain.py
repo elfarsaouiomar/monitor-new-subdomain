@@ -4,7 +4,6 @@ version = "1.0"
 
 import argparse
 from requests import post, get
-from requests.exceptions import Timeout, HTTPError
 from json import loads, dumps
 import logging
 import dns.resolver
@@ -12,7 +11,6 @@ from pymongo import MongoClient
 from config import *
 from termcolor import colored
 import threading
-from time import sleep
 
 class Notify:
     """
@@ -363,8 +361,7 @@ if __name__ == "__main__":
         subdomainMonitpring = SubDomainMonitoring()
         args = subdomainMonitpring.initArgparse()
         subdomainMonitpring.main(args)
-        
-
+    
     except KeyboardInterrupt:
         print(colored("[!] Ctrl+c detected", "blue"))
         exit(0)
