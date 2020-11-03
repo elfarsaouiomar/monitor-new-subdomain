@@ -304,9 +304,13 @@ class SubDomainMonitoring:
 
     def getSubdomains(self, domain):
         target = self.db._findOne(domain=domain)
-        target = target.get('subdomains')
-        for i in target:
-            print(i)
+        if target is not None:
+            target = target.get('subdomains')
+            for i in target:
+                print(i)
+        else:
+            print(colored("[+] domain {} not exist in database".format(domain), "green"))
+
 
     def deleteDomain(self, domain):
         self.db._delete(domain=domain)
