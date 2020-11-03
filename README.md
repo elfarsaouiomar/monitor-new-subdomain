@@ -35,7 +35,7 @@ $ pip3 install -r requirements.txt
 
 **add domain to monitor. E.g: domain.com**
 ```bash
-python3 check-new-subdomain.py -a 
+python3 check-new-subdomain.py -a  domain.com
 ```
 
 **list all domain in database**
