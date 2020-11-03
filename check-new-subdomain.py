@@ -12,6 +12,7 @@ from pymongo import MongoClient
 from config import *
 from termcolor import colored
 import threading
+from jinja2 import Template
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
@@ -25,13 +26,13 @@ class Notify:
 
         try:
             telegramUrl = "https://api.telegram.org/bot{0}/sendMessage".format(telegramToken)
-            req  = post(telegramUrl, params={'text': dumps(message), 'chat_id': chatId, 'parse_mode': 'Markdown'},
+            req  = post(telegramUrl, params={'text': message, 'chat_id': chatId, 'parse_mode': 'Markdown'},
                  headers={'Content-Type': 'application/json'})
             if req.status_code != 200:
                 print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code),  "red"))
                 
         except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "red"))
+            print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
 
         except Exception as e:
@@ -48,7 +49,7 @@ class Notify:
             if req.status_code == 429:
                 print(colored("[!] Api Rate limit : ",  "red"))
         except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "blue"))
+            print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
 
         except Exception as e:
@@ -129,7 +130,7 @@ class SubDomainMonitoring:
                         newSubdomains.append(subDomain)
 
         except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "red"))
+            print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
 
         except Exception as e:
@@ -137,14 +138,15 @@ class SubDomainMonitoring:
 
         return newSubdomains
 
-
     def getFormSublister(self, domain):
-        url = "https://api.sublist3r.com/search.php?domain={}".format(domain)
-        return get(url).json()
+        resp = get("https://api.sublist3r.com/search.php?domain={}".format(domain)).json()
+        if resp is not None:
+            return resp
+        return []
  
     def getdomain(self, domain):
         resultSubdomains = dict()
-        resultSubdomains['domain'] = domain 
+        resultSubdomains['domain'] = domain  
         resultSubdomains["subdomains"] = list(set(self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain)))
 
         return resultSubdomains
@@ -173,22 +175,23 @@ class SubDomainMonitoring:
             return resultSubdomains
 
         except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "red"))
+            print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
 
         except Exception as e:
-            print(colored("[!] error while requesing crt \n [!] {}".format(e), "red"))
+            print(colored("[!] error while requesing crt \n[!] {}".format(e), "red"))
 
         return resultSubdomains
 
     def scanSubdomain(self, subdomain):
         """
+        Resolve subdomain
         """
         dnsResolver = dns.resolver.Resolver()
         dnsResolver.nameservers = ['8.8.8.8', '8.8.4.4']
 
         dnsResult = dict()
-        dnsResult['new subdomains '] = subdomain
+        dnsResult['new subdomain '] = subdomain
         try:
             for qtype in ['A', 'CNAME']:
                 answers = dns.resolver.resolve(subdomain, qtype, raise_on_no_answer=False)
@@ -204,12 +207,8 @@ class SubDomainMonitoring:
                     cname_records = [str(i) for i in answers.rrset]
                     dnsResult["CNAME"] = cname_records[0]
 
-            #target=self.notify, args=(dnsResult,)
-            
-            self.notify(dnsResult)
-
         except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "red"))
+            print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
 
         except dns.exception.DNSException:
@@ -218,7 +217,8 @@ class SubDomainMonitoring:
         except Exception as e:
             print(colored("[!] error on resolving subdomain \n [!] {}".format(e), "red"))
 
-        return dnsResult
+        finally:
+            return dnsResult
 
     def notify(self, message):
         """
@@ -248,7 +248,7 @@ class SubDomainMonitoring:
             target = self.db._findOne(domain=domain)  # get all subdomian by domian name
 
             if target is None:
-                print(colored("[+] Insert  subdomain {0} for {1}".format(len(newsubDomain), domain), "green"))
+                print(colored("[+] add {0} subdomain for {1}".format(len(newsubDomain), domain), "green"))
                 self.db._add(target=subdomians)
 
             else:
@@ -265,12 +265,25 @@ class SubDomainMonitoring:
                     else:
                         self.db._update(domain, diff)
                         print(colored("[+] Update new {0} subdomain ".format(diffLength), "green"))
-                        for i in diff:print(i)
+                        #for i in diff:print(i)
+                        victim  = []
                         for subdomian in diff:
-                            self.scanSubdomain(subdomian)
+                            res = self.scanSubdomain(subdomian)
+                            victim.append(res)
+                        #print('victim: list: ' , victim)
+                        self.telegrameTemplate(subdomainlist=victim)
+                        
+                        
 
         except Exception as e:
             print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
+
+    def telegrameTemplate(self, subdomainlist):
+        template = """New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
+        for i in subdomainlist:
+            tm = Template(template)
+            msg = tm.render(subdomain=i.get('new subdomain '),A=i.get('A'), cname=i.get('CNAME'))
+            self.notify(msg)
 
     def add(self, domain):
         """
@@ -278,7 +291,10 @@ class SubDomainMonitoring:
         :param domain:
         :return:
         """
-        self.compaire(self.getdomain(domain=domain))
+        if self.db._findOne(domain=domain) is None:
+            self.compaire(self.getdomain(domain=domain))
+        else:
+            print(colored("[+] {} already exist in database".format(domain), "green"))
 
     def listAllDomains(self):
         """
@@ -299,10 +315,17 @@ class SubDomainMonitoring:
         print(colored("[+] delete {} from database".format(domain), "blue"))
 
     def monitor(self):
-        for domain in self.db._findAll():
-            print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['blink']))
-            thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
-            thread.start()
+        try:
+            for domain in self.db._findAll():
+                print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['blink']))
+                thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
+                thread.start()
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "yellow"))
+            exit(0)
+
+        except Exception as error:
+            print(colored("[!] {0}".format(error), "red"))
 
     def initArgparse(self):
         parser = argparse.ArgumentParser(description='Simple tools to monitoring new subdomain')
@@ -345,11 +368,10 @@ class SubDomainMonitoring:
             self.deleteDomain(domain=args.delete)
 
         elif args.add:
-            self.add(args.add)
-
+            self.add(domain=args.add)
+        
         else:
             self.monitor()
-
 
 def banner():
     BANNER = """
@@ -366,7 +388,6 @@ def banner():
     """
     print(colored(BANNER.format("Monitor New Subdomain","@omarelfarsaoui",version),'red'))
 
-
 if __name__ == "__main__":
     try:
         banner()
@@ -375,7 +396,7 @@ if __name__ == "__main__":
         subdomainMonitpring.main(args)
     
     except KeyboardInterrupt:
-        print(colored("[!] Ctrl+c detected", "blue"))
+        print(colored("[!] Ctrl+c detected", "yellow"))
         exit(0)
 
     except Exception as error:
