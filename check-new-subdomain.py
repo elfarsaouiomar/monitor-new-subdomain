@@ -265,12 +265,10 @@ class SubDomainMonitoring:
                     else:
                         self.db._update(domain, diff)
                         print(colored("[+] Update new {0} subdomain ".format(diffLength), "green"))
-                        #for i in diff:print(i)
                         victim  = []
                         for subdomian in diff:
                             res = self.scanSubdomain(subdomian)
                             victim.append(res)
-                        #print('victim: list: ' , victim)
                         self.telegrameTemplate(subdomainlist=victim)
                         
                         
@@ -314,6 +312,31 @@ class SubDomainMonitoring:
         self.db._delete(domain=domain)
         print(colored("[+] delete {} from database".format(domain), "blue"))
 
+    def export(self, filename):
+        """
+        export all subdomain to text file
+        """
+
+        try:
+            total = 0
+            all = self.db._findAll()
+            with open(filename+".txt", "w") as file:
+                for domain in all:
+                    total = total + len(domain.get('subdomains'))
+                    for subdmain in domain.get('subdomains'):
+                        file.write(subdmain+"\n")
+            file.close()
+            print(colored("[+] Export {} from database ".format(total), "green"))
+                        #print(subdmain)
+
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "yellow"))
+            exit(0)
+
+        except Exception as error:
+            print(colored("[!] {0}".format(error), "red"))
+
+
     def monitor(self):
         try:
             for domain in self.db._findAll():
@@ -341,6 +364,8 @@ class SubDomainMonitoring:
         parser.add_argument("-L", "--listsubdomains", help="list all domain on for domain", type=str, metavar='', required=False)
 
         parser.add_argument("-d", "--delete", help="disable for monitoring", type=str, metavar='', required=False)
+        
+        parser.add_argument("-e", "--export", help="export all subdomains for all domains into single file", type=str, metavar='', required=False,)
 
         parser.add_argument("-s", "--slack", help="send notification via slack", type=bool, metavar='', required=False,
                             const=True, nargs='?')
@@ -369,7 +394,10 @@ class SubDomainMonitoring:
 
         elif args.add:
             self.add(domain=args.add)
-        
+
+        elif args.export:
+            self.export(filename=args.export)
+            
         else:
             self.monitor()
 
