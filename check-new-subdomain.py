@@ -255,16 +255,9 @@ class SubDomainMonitoring:
                 oldSubdomain = target.get('subdomains')
                 if len(newsubDomain) != 0:
                     diff = [x for x in oldSubdomain + newsubDomain if x not in oldSubdomain or x not in newsubDomain]
-
-                    diffLength = len(diff)
-
-                    if diffLength == 0:
-                        message = "unfortunately i don't found any new subdomain for {0} good look next time".format(domain)
-                        self.notify(message)
-
                     else:
                         self.db._update(domain, diff)
-                        print(colored("[+] Update new {0} subdomain ".format(diffLength), "green"))
+                        print(colored("[+] Update new {0} subdomain ".format(len(diff)), "green"))
                         victim  = []
                         for subdomian in diff:
                             res = self.scanSubdomain(subdomian)
