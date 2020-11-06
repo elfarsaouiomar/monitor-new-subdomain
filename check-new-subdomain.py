@@ -386,15 +386,18 @@ class SubDomainMonitoring:
             self.getSubdomains(domain=args.listsubdomains)
 
         elif args.delete:
+            banner()
             self.deleteDomain(domain=args.delete)
 
         elif args.add:
+            banner()
             self.add(domain=args.add)
 
         elif args.export:
             self.export(filename=args.export)
             
         else:
+            banner()
             self.monitor()
 
 def banner():
@@ -414,7 +417,6 @@ def banner():
 
 if __name__ == "__main__":
     try:
-        banner()
         subdomainMonitpring = SubDomainMonitoring()
         args = subdomainMonitpring.initArgparse()
         subdomainMonitpring.main(args)
