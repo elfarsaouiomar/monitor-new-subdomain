@@ -2,17 +2,20 @@
 
 version = "1.0"
 
-import argparse
-from requests import post, get
-import requests.packages.urllib3
-from json import loads, dumps
-import logging
-import dns.resolver
-from pymongo import MongoClient
-from config import *
-from termcolor import colored
-import threading
-from jinja2 import Template
+try:
+    import argparse, threading
+    from requests import post, get
+    import requests.packages.urllib3
+    from json import loads, dumps
+    import dns.resolver
+    from pymongo import MongoClient
+    from config import *
+    from termcolor import colored
+    from jinja2 import Template
+except ModuleNotFoundError as identifier:
+    print(colored("[+] {} \n[!] pip3 install module".format(str(identifier)),"red"))
+    exit(0)
+
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
@@ -54,7 +57,6 @@ class Notify:
 
         except Exception as e:
             print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
-
 
 class ConnToDb:
     """
@@ -108,7 +110,6 @@ class ConnToDb:
         :return:
         """
         self.client.close()
-
 
 class SubDomainMonitoring:
     db = ConnToDb()
@@ -179,7 +180,7 @@ class SubDomainMonitoring:
             exit(0)
 
         except Exception as e:
-            print(colored("[!] error while requesing crt \n[!] {}".format(e), "red"))
+            print(colored("[!] error while requesing {} \n[!] {}".format(domain,e), "red"))
 
         return resultSubdomains
 
@@ -246,30 +247,32 @@ class SubDomainMonitoring:
             newsubDomain = subdomians.get('subdomains')
 
             target = self.db._findOne(domain=domain)  # get all subdomian by domian name
-
             if target is None:
-                print(colored("[+] add {0} subdomain for {1}".format(len(newsubDomain), domain), "green"))
+                print(colored("[+] new target {domain} : {length} subdomain ".format(domain=domain, length=len(newsubDomain)), "green"))
                 self.db._add(target=subdomians)
 
             else:
-                oldSubdomain = target.get('subdomains')
-                if len(newsubDomain) != 0:
+                if len(newsubDomain) > 0:
+                    oldSubdomain = target.get('subdomains')
                     diff = [x for x in oldSubdomain + newsubDomain if x not in oldSubdomain or x not in newsubDomain]
-                    self.db._update(domain, diff)
-                    print(colored("[+] Update new {0} subdomain ".format(len(diff)), "green"))
-                    victim  = []
-                    for subdomian in diff:
-                        res = self.scanSubdomain(subdomian)
-                        victim.append(res)
-                    self.telegrameTemplate(subdomainlist=victim)
-                        
-                        
+                    if len(diff) > 0:
+                        self.db._update(domain, diff)
+                        print(colored("[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
+                        victim  = []
+                        for subdomian in diff:
+                            res = self.scanSubdomain(subdomian)
+                            victim.append(res)
+                        self.telegrameTemplate(subdomainlist=victim)
 
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "yellow"))
+            exit(0)
+        
         except Exception as e:
             print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
 
     def telegrameTemplate(self, subdomainlist):
-        template = """New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
+        template = """:new: New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
         for i in subdomainlist:
             tm = Template(template)
             msg = tm.render(subdomain=i.get('new subdomain '),A=i.get('A'), cname=i.get('CNAME'))
@@ -285,6 +288,27 @@ class SubDomainMonitoring:
             self.compaire(self.getdomain(domain=domain))
         else:
             print(colored("[+] {} already exist in database".format(domain), "green"))
+
+    def readfile(self, file):
+        return open(file,'r').readlines()
+
+    def importDomainsFromFile(self,file):
+        try:
+            domains = self.readfile(file)
+            for i in domains:
+                domain = i.strip()
+                if domain:
+                    print(colored("[+] import : ", "blue")+ colored(domain, 'green', attrs=['reverse']))                        
+                    t = threading.Thread(target=self.add, args=(domain,))
+                    t.start()
+
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "yellow"))
+            exit(0)                    
+
+        except Exception as e:
+            print(colored("[!] {0}".format(error), "red"))
+
 
     def listAllDomains(self):
         """
@@ -302,7 +326,6 @@ class SubDomainMonitoring:
                 print(i)
         else:
             print(colored("[+] domain {} not exist in database".format(domain), "green"))
-
 
     def deleteDomain(self, domain):
         self.db._delete(domain=domain)
@@ -323,7 +346,6 @@ class SubDomainMonitoring:
                         file.write(subdmain+"\n")
             file.close()
             print(colored("[+] Export {} from database ".format(total), "green"))
-                        #print(subdmain)
 
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
@@ -332,11 +354,10 @@ class SubDomainMonitoring:
         except Exception as error:
             print(colored("[!] {0}".format(error), "red"))
 
-
     def monitor(self):
         try:
             for domain in self.db._findAll():
-                print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['blink']))
+                print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['reverse']))
                 thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
                 thread.start()
         except KeyboardInterrupt:
@@ -351,11 +372,16 @@ class SubDomainMonitoring:
 
         parser.add_argument("-m", "--monitor", help="looking for new subdomain", type=bool, metavar='', required=False,
                             nargs='?', const=True)
+
         parser.add_argument("-a", "--add", help="Domain to monitor. E.g: domain.com", type=str, metavar='',
                             required=False)
 
         parser.add_argument("-l", "--listdomains", help="list all domain on database", type=bool, metavar='', required=False,
                             const=True, nargs='?')
+        
+
+        parser.add_argument("-i", "--importfile", help="import Domains From File", type=str, metavar='',
+                            required=False)
 
         parser.add_argument("-L", "--listsubdomains", help="list all domain on for domain", type=str, metavar='', required=False)
 
@@ -380,21 +406,30 @@ class SubDomainMonitoring:
             self.telegram = True
 
         if args.listdomains:
+            banner()
             self.listAllDomains()
 
         elif args.listsubdomains:
             self.getSubdomains(domain=args.listsubdomains)
 
         elif args.delete:
+            banner()
             self.deleteDomain(domain=args.delete)
 
         elif args.add:
+            banner()
             self.add(domain=args.add)
 
+        elif args.importfile:
+            banner()
+            self.importDomainsFromFile(file=args.importfile)
+
         elif args.export:
+            banner()
             self.export(filename=args.export)
             
         else:
+            banner()
             self.monitor()
 
 def banner():
@@ -414,7 +449,6 @@ def banner():
 
 if __name__ == "__main__":
     try:
-        banner()
         subdomainMonitpring = SubDomainMonitoring()
         args = subdomainMonitpring.initArgparse()
         subdomainMonitpring.main(args)
