@@ -57,6 +57,13 @@ python3 check-new-subdomain.py -m
 python3 check-new-subdomain.py -e filename
 ```
 
+**import list of domains via file**
+
+_each domain in line_
+```bash
+python3 check-new-subdomain.py -i domains.txt
+```
+
 **delete domain**
 ```
 python3 check-new-subdomain.py -d
@@ -83,6 +90,12 @@ python3 check-new-subdomain.py -t
 
 ![subdomain monitor](https://i.ibb.co/TYN3hRg/Screenshot-from-2020-10-26-15-00-34.png)
 
+
+**Import domains via file**
+
+![import domains](https://i.ibb.co/HzwxgC7/import.jpg)
+
+
 **mongoDB result**
 
 ![subdomain monitor](https://i.ibb.co/CKL3Hw0/target.png)
@@ -91,6 +104,7 @@ python3 check-new-subdomain.py -t
 **notification telegram**
 
 ![subdomain monitor](https://i.ibb.co/L8shfJG/Screenshot-from-2020-10-26-15-02-13.png)
+
 
 ## Feedback and issues
 ***[Create a new release](https://github.com/elfarsaouiomar/monitor-new-subdomain/releases/new)***
