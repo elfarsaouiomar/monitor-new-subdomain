@@ -126,4 +126,4 @@ python3 check-new-subdomain.py -t
     * AnubisDB
     * Urlscan.io
     * SecurityTrails **
-    * Threatminer
+    * ~~Threatminer~~
