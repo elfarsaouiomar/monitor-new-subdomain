@@ -139,6 +139,13 @@ class SubDomainMonitoring:
 
         return newSubdomains
 
+    def getFromThreatminer(self, domain):
+        url = "https://api.threatminer.org/v2/domain.php?q={}&rt=5".format(domain)
+        resp = get(url).json()
+        if resp.get('results') is not None:
+            return resp.get('results')
+        return []
+
     def getFormSublister(self, domain):
         resp = get("https://api.sublist3r.com/search.php?domain={}".format(domain)).json()
         if resp is not None:
@@ -148,7 +155,7 @@ class SubDomainMonitoring:
     def getdomain(self, domain):
         resultSubdomains = dict()
         resultSubdomains['domain'] = domain  
-        resultSubdomains["subdomains"] = list(set(self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain)))
+        resultSubdomains["subdomains"] = list(set(self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain) + self.getFromThreatminer(domain=domain)))
 
         return resultSubdomains
 
