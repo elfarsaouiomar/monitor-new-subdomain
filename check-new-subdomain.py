@@ -254,7 +254,7 @@ class SubDomainMonitoring:
             else:
                 if len(newsubDomain) > 0:
                     oldSubdomain = target.get('subdomains')
-                    diff = [x for x in oldSubdomain + newsubDomain if x not in oldSubdomain or x not in newsubDomain]
+                    diff = [x for x in newsubDomain if x not in oldSubdomain]
                     if len(diff) > 0:
                         self.db._update(domain, diff)
                         print(colored("[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
