@@ -112,7 +112,7 @@ python3 check-new-subdomain.py -t
 ## inspired from https://github.com/yassineaboukir/sublert
 
 ### Todo
- * add output file
+ * ~~add output file~~
  * add Docker
  * add more subdomain resources
     * Certspotter
