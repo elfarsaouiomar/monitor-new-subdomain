@@ -10,7 +10,10 @@ __pycache__/
 
 # C extensions
 *.so
-
+config.py
+*.txt
+env/
+.idea/
 # Distribution / packaging
 .Python
 build/
