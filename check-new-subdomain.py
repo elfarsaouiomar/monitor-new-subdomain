@@ -2,55 +2,57 @@
 
 version = "1.0"
 
-try:
-    import argparse, threading
-    from requests import post, get
-    import requests.packages.urllib3
-    from json import loads, dumps
-    import dns.resolver
-    from pymongo import MongoClient
-    from config import *
-    from termcolor import colored
-    from jinja2 import Template
-except ModuleNotFoundError as identifier:
-    print(colored("[+] {} \n[!] pip3 install module".format(str(identifier)),"red"))
-    exit(0)
 
+import argparse, threading
+from requests import post, get
+from pymongo import MongoClient
+import requests.packages.urllib3
+from json import loads
+import dns.resolver
+from config import *
+from termcolor import colored
+from jinja2 import Template
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
 
+
 class Notify:
-    """
-    send message via Telegrame
-    """
 
     def viaTelegram(self, message):
 
+        """
+            send message via Telegram
+        """
         try:
             telegramUrl = "https://api.telegram.org/bot{0}/sendMessage".format(telegramToken)
-            req  = post(telegramUrl, params={'text': message, 'chat_id': chatId, 'parse_mode': 'Markdown'},
-                 headers={'Content-Type': 'application/json'})
+            req = post(telegramUrl, params={'text': message, 'chat_id': chatId, 'parse_mode': 'Markdown'}, headers={'Content-Type': 'application/json'})
             if req.status_code != 200:
-                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code),  "red"))
-                
+                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code), "red"))
+
+            if req.status_code == 429:
+                print(colored("[!] Api Rate limit : ", "red"))
+
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
 
         except Exception as e:
             print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
-    """
-    send message via slack
-    """
 
     def viaSlack(self, message):
+
+        """
+            send message via slack
+        """
         try:
             req = post(WHslack, json={'text': ':new: {0}'.format(message)}, headers={'Content-Type': 'application/json'})
             if req.status_code != 200:
-                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code),  "red"))
+                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code), "red"))
+
             if req.status_code == 429:
-                print(colored("[!] Api Rate limit : ",  "red"))
+                print(colored("[!] Api Rate limit : ", "red"))
+
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
@@ -58,13 +60,17 @@ class Notify:
         except Exception as e:
             print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
 
+
 class ConnToDb:
     """
-    Connection to mongodb 
+    Connection to mongodb
     """
-    client = MongoClient(dbHost, dbPort)
+    client = MongoClient(dbHost, dbPort, serverSelectionTimeoutMS=3000)
     db = client['MonitoringSubdomain']
     collection = db['subdomains']
+
+    def connect(self):
+        pass
 
     def _findAll(self):
         """
@@ -111,6 +117,7 @@ class ConnToDb:
         """
         self.client.close()
 
+
 class SubDomainMonitoring:
     db = ConnToDb()
     sendNotification = Notify()
@@ -141,21 +148,27 @@ class SubDomainMonitoring:
 
     def getFromThreatminer(self, domain):
         url = "https://api.threatminer.org/v2/domain.php?q={}&rt=5".format(domain)
-        resp = get(url).json()
+        res = get(url)
+        if res.status_code != 200:
+            return []
+        resp = res.json()
         if resp.get('results') is not None:
             return resp.get('results')
         return []
+
 
     def getFormSublister(self, domain):
         resp = get("https://api.sublist3r.com/search.php?domain={}".format(domain)).json()
         if resp is not None:
             return resp
         return []
- 
+
     def getdomain(self, domain):
         resultSubdomains = dict()
-        resultSubdomains['domain'] = domain  
-        resultSubdomains["subdomains"] = list(set(self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain) + self.getFromThreatminer(domain=domain)))
+        resultSubdomains['domain'] = domain
+        resultSubdomains["subdomains"] = list(set(
+            self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain) + self.getFromThreatminer(
+                domain=domain)))
 
         return resultSubdomains
 
@@ -187,7 +200,7 @@ class SubDomainMonitoring:
             exit(0)
 
         except Exception as e:
-            print(colored("[!] error while requesing {} \n[!] {}".format(domain,e), "red"))
+            print(colored("[!] error while requesing {} \n[!] {}".format(domain, e), "red"))
 
         return resultSubdomains
 
@@ -255,7 +268,9 @@ class SubDomainMonitoring:
 
             target = self.db._findOne(domain=domain)  # get all subdomian by domian name
             if target is None:
-                print(colored("[+] new target {domain} : {length} subdomain ".format(domain=domain, length=len(newsubDomain)), "green"))
+                print(colored(
+                    "[+] new target {domain} : {length} subdomain ".format(domain=domain, length=len(newsubDomain)),
+                    "green"))
                 self.db._add(target=subdomians)
 
             else:
@@ -265,7 +280,7 @@ class SubDomainMonitoring:
                     if len(diff) > 0:
                         self.db._update(domain, diff)
                         print(colored("[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
-                        victim  = []
+                        victim = []
                         for subdomian in diff:
                             res = self.scanSubdomain(subdomian)
                             victim.append(res)
@@ -274,7 +289,7 @@ class SubDomainMonitoring:
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
             exit(0)
-        
+
         except Exception as e:
             print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
 
@@ -282,7 +297,7 @@ class SubDomainMonitoring:
         template = """:new: New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
         for i in subdomainlist:
             tm = Template(template)
-            msg = tm.render(subdomain=i.get('new subdomain '),A=i.get('A'), cname=i.get('CNAME'))
+            msg = tm.render(subdomain=i.get('new subdomain '), A=i.get('A'), cname=i.get('CNAME'))
             self.notify(msg)
 
     def add(self, domain):
@@ -297,25 +312,24 @@ class SubDomainMonitoring:
             print(colored("[+] {} already exist in database".format(domain), "green"))
 
     def readfile(self, file):
-        return open(file,'r').readlines()
+        return open(file, 'r').readlines()
 
-    def importDomainsFromFile(self,file):
+    def importDomainsFromFile(self, file):
         try:
             domains = self.readfile(file)
             for i in domains:
                 domain = i.strip()
                 if domain:
-                    print(colored("[+] import : ", "blue")+ colored(domain, 'green', attrs=['reverse']))                        
+                    print(colored("[+] import : ", "blue") + colored(domain, 'green', attrs=['reverse']))
                     t = threading.Thread(target=self.add, args=(domain,))
                     t.start()
 
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)                    
+            exit(0)
 
         except Exception as e:
             print(colored("[!] {0}".format(error), "red"))
-
 
     def listAllDomains(self):
         """
@@ -323,7 +337,8 @@ class SubDomainMonitoring:
         :return:
         """
         for domain in self.db._findAll():
-            print(colored("[+] {}".format(domain.get('domain')), "green"), colored("{0}".format(len(domain.get('subdomains'))), "green"))
+            print(colored("[+] {}".format(domain.get('domain')), "green"),
+                  colored("{0}".format(len(domain.get('subdomains'))), "green"))
 
     def getSubdomains(self, domain):
         target = self.db._findOne(domain=domain)
@@ -346,11 +361,11 @@ class SubDomainMonitoring:
         try:
             total = 0
             all = self.db._findAll()
-            with open(filename+".txt", "w") as file:
+            with open(filename + ".txt", "w") as file:
                 for domain in all:
                     total = total + len(domain.get('subdomains'))
                     for subdmain in domain.get('subdomains'):
-                        file.write(subdmain+"\n")
+                        file.write(subdmain + "\n")
             file.close()
             print(colored("[+] Export {} from database ".format(total), "green"))
 
@@ -364,7 +379,7 @@ class SubDomainMonitoring:
     def monitor(self):
         try:
             for domain in self.db._findAll():
-                print(colored("[+] Checking : ", "blue")+ colored(domain.get('domain'), 'green', attrs=['reverse']))
+                print(colored("[+] Checking : ", "blue") + colored(domain.get('domain'), 'green', attrs=['reverse']))
                 thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
                 thread.start()
         except KeyboardInterrupt:
@@ -383,18 +398,20 @@ class SubDomainMonitoring:
         parser.add_argument("-a", "--add", help="Domain to monitor. E.g: domain.com", type=str, metavar='',
                             required=False)
 
-        parser.add_argument("-l", "--listdomains", help="list all domain on database", type=bool, metavar='', required=False,
+        parser.add_argument("-l", "--listdomains", help="list all domain on database", type=bool, metavar='',
+                            required=False,
                             const=True, nargs='?')
-        
 
         parser.add_argument("-i", "--importfile", help="import Domains From File", type=str, metavar='',
                             required=False)
 
-        parser.add_argument("-L", "--listsubdomains", help="list all domain on for domain", type=str, metavar='', required=False)
+        parser.add_argument("-L", "--listsubdomains", help="list all domain on for domain", type=str, metavar='',
+                            required=False)
 
         parser.add_argument("-d", "--delete", help="disable for monitoring", type=str, metavar='', required=False)
-        
-        parser.add_argument("-e", "--export", help="export all subdomains for all domains into single file", type=str, metavar='', required=False,)
+
+        parser.add_argument("-e", "--export", help="export all subdomains for all domains into single file", type=str,
+                            metavar='', required=False, )
 
         parser.add_argument("-s", "--slack", help="send notification via slack", type=bool, metavar='', required=False,
                             const=True, nargs='?')
@@ -434,10 +451,11 @@ class SubDomainMonitoring:
         elif args.export:
             banner()
             self.export(filename=args.export)
-            
+
         else:
             banner()
             self.monitor()
+
 
 def banner():
     BANNER = """
@@ -447,22 +465,24 @@ def banner():
         ██╔████╔██║██╔██╗ ██║███████╗
         ██║╚██╔╝██║██║╚██╗██║╚════██║
         ██║ ╚═╝ ██║██║ ╚████║███████║
-        ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝                       
+        ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝
     # {0}
     # {1}
-    # version {2}                         
+    # version {2}
     """
-    print(colored(BANNER.format("Monitor New Subdomain","@omarelfarsaoui",version),'red'))
+    print(colored(BANNER.format("Monitor New Subdomain", "@omarelfarsaoui", version), 'red'))
+
 
 if __name__ == "__main__":
     try:
-        subdomainMonitpring = SubDomainMonitoring()
-        args = subdomainMonitpring.initArgparse()
-        subdomainMonitpring.main(args)
-    
+        subdomainMonitoring = SubDomainMonitoring()
+        args = subdomainMonitoring.initArgparse()
+        subdomainMonitoring.main(args)
+
     except KeyboardInterrupt:
-        print(colored("[!] Ctrl+c detected", "yellow"))
+        print(colored("[-] Ctrl+c detected", "yellow"))
         exit(0)
 
     except Exception as error:
         print(colored("[!] {0}".format(error), "red"))
+
