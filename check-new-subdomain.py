@@ -2,20 +2,19 @@
 
 version = "1.0"
 
-
 import argparse, threading
 from requests import post, get
 from pymongo import MongoClient
 import requests.packages.urllib3
 from json import loads
 import dns.resolver
-from config import *
+from datetime import datetime
 from termcolor import colored
 from jinja2 import Template
+from config import dbPort, dbHost, chatId, WHslack, telegramToken
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
-
 
 class Notify:
 
@@ -121,8 +120,7 @@ class ConnToDb:
 class SubDomainMonitoring:
     db = ConnToDb()
     sendNotification = Notify()
-    slack = False
-    telegram = False
+    slack = telegram = saveToFile = False
 
     def parseCrtResponse(self, subdomains):
         """
@@ -155,7 +153,6 @@ class SubDomainMonitoring:
         if resp.get('results') is not None:
             return resp.get('results')
         return []
-
 
     def getFormSublister(self, domain):
         resp = get("https://api.sublist3r.com/search.php?domain={}".format(domain)).json()
@@ -209,13 +206,14 @@ class SubDomainMonitoring:
         Resolve subdomain
         """
         dnsResolver = dns.resolver.Resolver()
-        dnsResolver.nameservers = ['8.8.8.8', '8.8.4.4']
+        dnsResolver.nameservers = ['1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4', '9.9.9.9', '9.9.9.10','77.88.8.8', '77.88.8.1', '208.67.222.222', '208.67.220.220']
 
         dnsResult = dict()
-        dnsResult['new subdomain '] = subdomain
+        dnsResult['subdomain'] = subdomain
         try:
             for qtype in ['A', 'CNAME']:
-                answers = dns.resolver.resolve(subdomain, qtype, raise_on_no_answer=False)
+
+                answers = dnsResolver.query(subdomain, qtype, raise_on_no_answer=False)
 
                 if answers.rrset is None:
                     pass
@@ -236,7 +234,7 @@ class SubDomainMonitoring:
             pass
 
         except Exception as e:
-            print(colored("[!] error on resolving subdomain \n [!] {}".format(e), "red"))
+            print(colored("[!] Error while resolving subdomain \n[!] {}".format(e), "red"))
 
         finally:
             return dnsResult
@@ -277,6 +275,9 @@ class SubDomainMonitoring:
                 if len(newsubDomain) > 0:
                     oldSubdomain = target.get('subdomains')
                     diff = [x for x in newsubDomain if x not in oldSubdomain]
+                    if self.saveToFile:
+                        self.saveResultIntoFile(newsubDomain)
+
                     if len(diff) > 0:
                         self.db._update(domain, diff)
                         print(colored("[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
@@ -294,11 +295,27 @@ class SubDomainMonitoring:
             print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
 
     def telegrameTemplate(self, subdomainlist):
-        template = """:new: New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
+        template = """New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
         for i in subdomainlist:
             tm = Template(template)
-            msg = tm.render(subdomain=i.get('new subdomain '), A=i.get('A'), cname=i.get('CNAME'))
+            msg = tm.render(subdomain=i.get('subdomain'), A=i.get('A'), cname=i.get('CNAME'))
             self.notify(msg)
+
+    def saveResultIntoFile(self, listNewSubdomain):
+        """
+        save the new subdomains to a file
+        """
+        try:
+            file = open("new-subdomain" + self.getCurrentTime() + ".txt", "w")
+            for subomain in listNewSubdomain:
+                file.write(subomain+"\n")
+
+        except KeyboardInterrupt:
+            print(colored("[!] Ctrl+c detected", "yellow"))
+            exit(0)
+
+        except Exception as e:
+            print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
 
     def add(self, domain):
         """
@@ -331,6 +348,9 @@ class SubDomainMonitoring:
         except Exception as e:
             print(colored("[!] {0}".format(error), "red"))
 
+    def getCurrentTime(self):
+        return datetime.now().strftime("%Y-%m-%d-%I-%M-%S")
+
     def listAllDomains(self):
         """
         list all domain monitoring in DB
@@ -353,7 +373,7 @@ class SubDomainMonitoring:
         self.db._delete(domain=domain)
         print(colored("[+] delete {} from database".format(domain), "blue"))
 
-    def export(self, filename):
+    def export(self):
         """
         export all subdomain to text file
         """
@@ -361,11 +381,11 @@ class SubDomainMonitoring:
         try:
             total = 0
             all = self.db._findAll()
-            with open(filename + ".txt", "w") as file:
+            with open("export-" + self.getCurrentTime() + ".txt", "w") as file:
                 for domain in all:
                     total = total + len(domain.get('subdomains'))
-                    for subdmain in domain.get('subdomains'):
-                        file.write(subdmain + "\n")
+                    for subdomain in domain.get('subdomains'):
+                        file.write(subdomain + "\n")
             file.close()
             print(colored("[+] Export {} from database ".format(total), "green"))
 
@@ -395,6 +415,9 @@ class SubDomainMonitoring:
         parser.add_argument("-m", "--monitor", help="looking for new subdomain", type=bool, metavar='', required=False,
                             nargs='?', const=True)
 
+        parser.add_argument("-sn", "--saveNewSubdomain", help="save new subdomain to file", type=bool, metavar='', required=False,
+                            nargs='?', const=True)
+
         parser.add_argument("-a", "--add", help="Domain to monitor. E.g: domain.com", type=str, metavar='',
                             required=False)
 
@@ -410,11 +433,13 @@ class SubDomainMonitoring:
 
         parser.add_argument("-d", "--delete", help="disable for monitoring", type=str, metavar='', required=False)
 
-        parser.add_argument("-e", "--export", help="export all subdomains for all domains into single file", type=str,
-                            metavar='', required=False, )
+        parser.add_argument("-e", "--export", help="export all subdomains for all domains into single file", type=bool, metavar='',
+                            required=False,
+                            const=True, nargs='?')
 
         parser.add_argument("-s", "--slack", help="send notification via slack", type=bool, metavar='', required=False,
                             const=True, nargs='?')
+
         parser.add_argument("-t", "--telegram", help="send notification via telegram", type=bool, metavar='',
                             required=False,
                             const=True, nargs='?')
@@ -423,38 +448,25 @@ class SubDomainMonitoring:
 
     def main(self, args):
 
-        if args.slack:
-            self.slack = True
+        if args.slack: self.slack = True
 
-        if args.telegram:
-            self.telegram = True
+        if args.telegram: self.telegram = True
 
-        if args.listdomains:
-            banner()
-            self.listAllDomains()
+        if args.saveNewSubdomain: self.saveToFile = True
 
-        elif args.listsubdomains:
-            self.getSubdomains(domain=args.listsubdomains)
+        if args.listdomains: self.listAllDomains()
 
-        elif args.delete:
-            banner()
-            self.deleteDomain(domain=args.delete)
+        elif args.listsubdomains: self.getSubdomains(domain=args.listsubdomains)
 
-        elif args.add:
-            banner()
-            self.add(domain=args.add)
+        elif args.delete: self.deleteDomain(domain=args.delete)
 
-        elif args.importfile:
-            banner()
-            self.importDomainsFromFile(file=args.importfile)
+        elif args.add: self.add(domain=args.add)
 
-        elif args.export:
-            banner()
-            self.export(filename=args.export)
+        elif args.importfile:  self.importDomainsFromFile(file=args.importfile)
 
-        else:
-            banner()
-            self.monitor()
+        elif args.export: self.export()
+
+        else: self.monitor()
 
 
 def banner():
@@ -475,6 +487,7 @@ def banner():
 
 if __name__ == "__main__":
     try:
+        banner()
         subdomainMonitoring = SubDomainMonitoring()
         args = subdomainMonitoring.initArgparse()
         subdomainMonitoring.main(args)
