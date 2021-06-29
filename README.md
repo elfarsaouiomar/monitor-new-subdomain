@@ -54,8 +54,14 @@ python3 check-new-subdomain.py -m
 ```
 **export all subdomains form the database to txt file**
 ```bash
-python3 check-new-subdomain.py -e filename
+python3 check-new-subdomain.py -e
 ```
+
+**export new subdomains to txt file**
+```bash
+python3 check-new-subdomain.py -m -sn
+```
+
 
 **import list of domains via file**
 
