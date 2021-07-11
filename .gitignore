@@ -13,6 +13,7 @@ __pycache__/
 config.py
 *.txt
 env/
+venv/
 .idea/
 # Distribution / packaging
 .Python
