@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from config import dbHost, dbPort, dbName, collection
+from src.Config import dbHost, dbPort, dbName, collection
 
 
 

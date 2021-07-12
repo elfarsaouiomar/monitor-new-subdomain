@@ -1,6 +1,6 @@
 from requests import post
 from termcolor import colored
-from config import chatId, WHslack, telegramToken
+from src.Config import chatId, WHslack, telegramToken
 
 class Notifications:
 
