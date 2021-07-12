@@ -10,7 +10,6 @@ __pycache__/
 
 # C extensions
 *.so
-config.py
 *.txt
 env/
 venv/
@@ -66,6 +65,8 @@ pytestdebug.log
 *.mo
 *.pot
 
+src/config.dev.py
+
 # Django stuff:
 *.log
 local_settings.py
@@ -91,7 +92,6 @@ target/
 
 # IPython
 profile_default/
-ipython_config.py
 
 # pyenv
 .python-version
