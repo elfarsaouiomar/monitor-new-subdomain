@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from config import dbHost, dbPort, dbName, collection
 
 
+
 class ConfigDB:
     client = MongoClient(dbHost, dbPort, serverSelectionTimeoutMS=3000)
     db = client[dbName]
@@ -16,13 +17,13 @@ class ConfigDB:
         self.collection.insert_one(target)
 
     def _update(self, domain, newsubdomains):
-        """ Update given domains """
-        self.collection.update_one({"domain": domain}, {"$pushAll": {"subdomains": newsubdomains}})
+        """ Update subdomains for a given domain """
+        for subdomain in newsubdomains: self.collection.update({"domain": domain}, {"$push": {"subdomains": subdomain}})
 
     def _findOne(self, domain):
-        """ Retrun all subdomains for given domain """
+        """ Retrun all subdomains for a given domain """
         return self.collection.find_one({"domain": domain})
 
     def _delete(self, domain):
-        """ Delete domains and subdomians for given domain """
+        """ Delete domains and subdomians for a given domain """
         self.collection.find_one_and_delete({"domain": domain})
