@@ -148,3 +148,6 @@ dmypy.json
 .prof
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+.run/MNS.run.xml
+.run/MNS.run.xml
+*.xml
