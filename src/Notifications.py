@@ -8,7 +8,7 @@ class Notifications:
         """  Send message to Telegram """
         try:
             telegramUrl = "https://api.telegram.org/bot{0}/sendMessage".format(telegramToken)
-            req = post(url=telegramUrl, params={'text': message, 'chat_id': chatId, 'parse_mode': 'Markdown'},
+            req = post(url=telegramUrl, params={'text': '🆕 {0}'.format(message) , 'chat_id': chatId, 'parse_mode': 'Markdown'},
                        headers={'Content-Type': 'application/json'})
             if req.status_code != 200:
                 print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code), "red"))
