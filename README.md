@@ -57,12 +57,6 @@ python3 check-new-subdomain.py -m
 python3 check-new-subdomain.py -e
 ```
 
-**export new subdomains to txt file**
-```bash
-python3 check-new-subdomain.py -m -sn
-```
-
-
 **import list of domains via file**
 
 _each domain in line_

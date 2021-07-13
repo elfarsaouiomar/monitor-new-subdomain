@@ -1,138 +1,39 @@
 #!/usr/bin/env python
+# I don't believe in the license, you can do whatever you like
 
-version = "1.0"
+version = "1.1"
 
-import argparse, threading
-from requests import post, get
-from pymongo import MongoClient
-import requests.packages.urllib3
+
+import argparse
+import threading
 from json import loads
 import dns.resolver
-from datetime import datetime
+import requests.packages.urllib3
+from requests import get
 from termcolor import colored
-from jinja2 import Template
-from config import dbPort, dbHost, chatId, WHslack, telegramToken
+
+from src.ConfigDB import ConfigDB
+from src.Config import resolverList
+from src.Functions import getCurrentTime, notificationTemplate
+from src.Notifications import Notifications
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
 
-class Notify:
-
-    def viaTelegram(self, message):
-
-        """
-            send message via Telegram
-        """
-        try:
-            telegramUrl = "https://api.telegram.org/bot{0}/sendMessage".format(telegramToken)
-            req = post(telegramUrl, params={'text': message, 'chat_id': chatId, 'parse_mode': 'Markdown'}, headers={'Content-Type': 'application/json'})
-            if req.status_code != 200:
-                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code), "red"))
-
-            if req.status_code == 429:
-                print(colored("[!] Api Rate limit : ", "red"))
-
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
-
-        except Exception as e:
-            print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
-
-    def viaSlack(self, message):
-
-        """
-            send message via slack
-        """
-        try:
-            req = post(WHslack, json={'text': ':new: {0}'.format(message)}, headers={'Content-Type': 'application/json'})
-            if req.status_code != 200:
-                print(colored("[!] error wile sending Message \n[!] status code : {0}".format(req.status_code), "red"))
-
-            if req.status_code == 429:
-                print(colored("[!] Api Rate limit : ", "red"))
-
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
-
-        except Exception as e:
-            print(colored("[!] error while sending slack message \n [!] {}".format(e), "red"))
-
-
-class ConnToDb:
-    """
-    Connection to mongodb
-    """
-    client = MongoClient(dbHost, dbPort, serverSelectionTimeoutMS=3000)
-    db = client['MonitoringSubdomain']
-    collection = db['subdomains']
-
-    def connect(self):
-        pass
-
-    def _findAll(self):
-        """
-        get all subdomain
-        :return:
-        """
-        return self.collection.find()
-
-    def _add(self, target):
-        """
-        take two arg
-        domian string
-        newsubdomian list of newSubdomian
-        """
-        self.collection.insert_one(target)
-
-    def _update(self, domain, newSubbdomain):
-        """
-        update document in DB
-        :param domain:
-        :return:
-        """
-        self.collection.update_one({"domain": domain}, {"$pushAll": {"subdomains": newSubbdomain}})
-
-    def _findOne(self, domain):
-        """
-        :param domain: take domain as params
-        :return: return Object of domain
-        """
-        return self.collection.find_one({"domain": domain})
-
-    def _delete(self, domain):
-        """
-        delete domain name from database
-        :param domain: domain name
-        :return:
-        """
-        self.collection.find_one_and_delete({"domain": domain})
-
-    def _close(self):
-        """
-         close  connection
-        :return:
-        """
-        self.client.close()
-
-
 class SubDomainMonitoring:
-    db = ConnToDb()
-    sendNotification = Notify()
+    db = ConfigDB()
+    sendNotification = Notifications()
     slack = telegram = saveToFile = False
 
     def parseCrtResponse(self, subdomains):
-        """
-        :return: list of subomian (sort, clean, uniq)
-        """
+        """ parse crt and return list of subomians (sort, clean, uniq) """
         newSubdomains = list()
         try:
             for i in subdomains:
                 listsubdomians = i.split('\n')
                 for subDomain in listsubdomians:
                     if subDomain not in newSubdomains:
-                        subDomain = subDomain.replace("*.", "")
+                        subDomain = subDomain.replace("*.", "").replace("@", ".")
                         newSubdomains.append(subDomain)
 
         except KeyboardInterrupt:
@@ -145,6 +46,7 @@ class SubDomainMonitoring:
         return newSubdomains
 
     def getFromThreatminer(self, domain):
+        """ get list from Threatminer """
         url = "https://api.threatminer.org/v2/domain.php?q={}&rt=5".format(domain)
         res = get(url)
         if res.status_code != 200:
@@ -155,6 +57,7 @@ class SubDomainMonitoring:
         return []
 
     def getFormSublister(self, domain):
+        """ get list from sublister """
         resp = get("https://api.sublist3r.com/search.php?domain={}".format(domain)).json()
         if resp is not None:
             return resp
@@ -170,11 +73,7 @@ class SubDomainMonitoring:
         return resultSubdomains
 
     def getFromCrt(self, domain):
-        """
-            take domain as string
-            check crt.sh for
-            retrun a list of subdomain
-        """
+        """ get list of subdomain from crt """
         resultSubdomains = list()
         try:
             base_url = "https://crt.sh/?q={}&output=json"
@@ -183,6 +82,7 @@ class SubDomainMonitoring:
 
             user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:64.0) Gecko/20100101 Firefox/64.0'
             req = get(url, headers={'User-Agent': user_agent}, timeout=30, verify=False)
+
             if req.status_code == 200:
                 content = req.content.decode('utf-8')
                 data = loads(content)
@@ -197,34 +97,31 @@ class SubDomainMonitoring:
             exit(0)
 
         except Exception as e:
-            print(colored("[!] error while requesing {} \n[!] {}".format(domain, e), "red"))
+            print(colored("[!] error while requesting {} \n[!] {}".format(domain, e), "red"))
 
         return resultSubdomains
 
     def scanSubdomain(self, subdomain):
-        """
-        Resolve subdomain
-        """
         dnsResolver = dns.resolver.Resolver()
-        dnsResolver.nameservers = ['1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4', '9.9.9.9', '9.9.9.10','77.88.8.8', '77.88.8.1', '208.67.222.222', '208.67.220.220']
+        dnsResolver.nameservers = resolverList
 
         dnsResult = dict()
         dnsResult['subdomain'] = subdomain
         try:
             for qtype in ['A', 'CNAME']:
 
-                answers = dnsResolver.query(subdomain, qtype, raise_on_no_answer=False)
+                answers = dnsResolver.resolve(subdomain, qtype)
 
                 if answers.rrset is None:
                     pass
 
                 elif answers.rdtype == 1:
                     a_records = [str(i) for i in answers.rrset]
-                    dnsResult["A"] = a_records[0]
+                    dnsResult["A"] = a_records
 
                 elif answers.rdtype == 5:
                     cname_records = [str(i) for i in answers.rrset]
-                    dnsResult["CNAME"] = cname_records[0]
+                    dnsResult["CNAME"] = cname_records
 
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
@@ -237,78 +134,38 @@ class SubDomainMonitoring:
             print(colored("[!] Error while resolving subdomain \n[!] {}".format(e), "red"))
 
         finally:
-            return dnsResult
+            if dnsResult.get('A') is not None and dnsResult.get('CNAME') is not None:
+                self.notify(message=dnsResult)
 
     def notify(self, message):
-        """
-        send message via slack Or Telegram
-        :param message:
-        """
+        """ send message via slack Or Telegram """
         if self.slack:
-            self.sendNotification.viaSlack(message)
+            self.sendNotification.slack(notificationTemplate(message))
 
         if self.telegram:
-            self.sendNotification.viaTelegram(message)
+            self.sendNotification.telegrame(notificationTemplate(message))
 
     def compaire(self, subdomians):
-        """
-        take a list of subdomain
-        call getFromDb => get all subdomain from DB as list
-        compaire the two list
-
-        :param subdomians: list of subdomain
-        :return: return new subdomain
-        """
+        """ Compate a list of given subdomains and :return: return new subdomains """
 
         try:
             domain = subdomians.get('domain')
             newsubDomain = subdomians.get('subdomains')
-
             target = self.db._findOne(domain=domain)  # get all subdomian by domian name
-            if target is None:
-                print(colored(
-                    "[+] new target {domain} : {length} subdomain ".format(domain=domain, length=len(newsubDomain)),
-                    "green"))
-                self.db._add(target=subdomians)
 
+            if target is None:
+                print(colored("[+] new target {domain} : {length} subdomain ".format(domain=domain, length=len(newsubDomain)),"green"))
+                self.db._add(target=subdomians)
             else:
                 if len(newsubDomain) > 0:
                     oldSubdomain = target.get('subdomains')
                     diff = [x for x in newsubDomain if x not in oldSubdomain]
-                    if self.saveToFile:
-                        self.saveResultIntoFile(newsubDomain)
-
                     if len(diff) > 0:
                         self.db._update(domain, diff)
                         print(colored("[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
-                        victim = []
                         for subdomian in diff:
-                            res = self.scanSubdomain(subdomian)
-                            victim.append(res)
-                        self.telegrameTemplate(subdomainlist=victim)
-
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
-
-        except Exception as e:
-            print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
-
-    def telegrameTemplate(self, subdomainlist):
-        template = """New subdomain {% if subdomain %}\nsubdomain : {{subdomain}}{% endif %}{% if A %}\nA record : {{A}}{% endif %}{% if cname %}\nCNAME record: {{cname}}{% endif %}"""
-        for i in subdomainlist:
-            tm = Template(template)
-            msg = tm.render(subdomain=i.get('subdomain'), A=i.get('A'), cname=i.get('CNAME'))
-            self.notify(msg)
-
-    def saveResultIntoFile(self, listNewSubdomain):
-        """
-        save the new subdomains to a file
-        """
-        try:
-            file = open("new-subdomain" + self.getCurrentTime() + ".txt", "w")
-            for subomain in listNewSubdomain:
-                file.write(subomain+"\n")
+                            pthread = threading.Thread(target=self.scanSubdomain, args=(subdomian,))
+                            pthread.start()
 
         except KeyboardInterrupt:
             print(colored("[!] Ctrl+c detected", "yellow"))
@@ -318,11 +175,7 @@ class SubDomainMonitoring:
             print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
 
     def add(self, domain):
-        """
-        add new domain to Monitoring
-        :param domain:
-        :return:
-        """
+        """ Add new domain to Monitoring """
         if self.db._findOne(domain=domain) is None:
             self.compaire(self.getdomain(domain=domain))
         else:
@@ -332,6 +185,7 @@ class SubDomainMonitoring:
         return open(file, 'r').readlines()
 
     def importDomainsFromFile(self, file):
+        """ import list of domains from a text file """
         try:
             domains = self.readfile(file)
             for i in domains:
@@ -346,42 +200,35 @@ class SubDomainMonitoring:
             exit(0)
 
         except Exception as e:
-            print(colored("[!] {0}".format(error), "red"))
-
-    def getCurrentTime(self):
-        return datetime.now().strftime("%Y-%m-%d-%I-%M-%S")
+            print(colored("[!] {0}".format(e), "red"))
 
     def listAllDomains(self):
-        """
-        list all domain monitoring in DB
-        :return:
-        """
+        """ list all domain monitoring in DB """
         for domain in self.db._findAll():
-            print(colored("[+] {}".format(domain.get('domain')), "green"),
-                  colored("{0}".format(len(domain.get('subdomains'))), "green"))
+            print(colored("[+] {}".format(domain.get('domain')), "green"), colored("{0}".format(len(domain.get('subdomains'))), "green"))
 
     def getSubdomains(self, domain):
+        """ return a list of subdomain for given domain """
         target = self.db._findOne(domain=domain)
         if target is not None:
             target = target.get('subdomains')
-            for i in target:
-                print(i)
+            for i in target: print(i)
         else:
             print(colored("[+] domain {} not exist in database".format(domain), "green"))
 
     def deleteDomain(self, domain):
-        self.db._delete(domain=domain)
-        print(colored("[+] delete {} from database".format(domain), "blue"))
+        """ Delete domain from database """
+        confirm = input('Are you sure want to delete [yes / no] : ')
+        if confirm == 'yes' or confirm == 'y':
+            self.db._delete(domain=domain)
+            print(colored("[+] delete {} from database".format(domain), "blue"))
 
     def export(self):
-        """
-        export all subdomain to text file
-        """
-
+        """ export all subdomain to text file """
         try:
             total = 0
             all = self.db._findAll()
-            with open("export-" + self.getCurrentTime() + ".txt", "w") as file:
+            with open("export-" + getCurrentTime() + ".txt", "w") as file:
                 for domain in all:
                     total = total + len(domain.get('subdomains'))
                     for subdomain in domain.get('subdomains'):
@@ -397,6 +244,7 @@ class SubDomainMonitoring:
             print(colored("[!] {0}".format(error), "red"))
 
     def monitor(self):
+        """ Monitor All domains in database """
         try:
             for domain in self.db._findAll():
                 print(colored("[+] Checking : ", "blue") + colored(domain.get('domain'), 'green', attrs=['reverse']))
@@ -446,6 +294,7 @@ class SubDomainMonitoring:
 
         return parser.parse_args()
 
+
     def main(self, args):
 
         if args.slack: self.slack = True
@@ -478,9 +327,9 @@ def banner():
         ██║╚██╔╝██║██║╚██╗██║╚════██║
         ██║ ╚═╝ ██║██║ ╚████║███████║
         ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝
-    # {0}
-    # {1}
-    # version {2}
+    ## {0}
+    ## {1}
+    ## version {2}
     """
     print(colored(BANNER.format("Monitor New Subdomain", "@omarelfarsaoui", version), 'red'))
 
