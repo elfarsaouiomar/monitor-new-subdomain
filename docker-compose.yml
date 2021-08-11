@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+    mongo:
+      image: mongo:latest
+      ports:
+      - "27018:27017"
+      volumes:
+      - db:/data/db
+
+    mns:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      volumes: 
+        - ./:/app
+      depends_on:
+        - mongo
+
+volumes:
+  db:

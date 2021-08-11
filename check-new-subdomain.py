@@ -258,12 +258,9 @@ class SubDomainMonitoring:
             print(colored("[!] {0}".format(error), "red"))
 
     def initArgparse(self):
-        parser = argparse.ArgumentParser(description='Simple tools to monitoring new subdomain')
+        parser = argparse.ArgumentParser(description='Simple tools to monitoring new subdomains')
 
         parser.add_argument("-m", "--monitor", help="looking for new subdomain", type=bool, metavar='', required=False,
-                            nargs='?', const=True)
-
-        parser.add_argument("-sn", "--saveNewSubdomain", help="save new subdomain to file", type=bool, metavar='', required=False,
                             nargs='?', const=True)
 
         parser.add_argument("-a", "--add", help="Domain to monitor. E.g: domain.com", type=str, metavar='',
@@ -294,14 +291,11 @@ class SubDomainMonitoring:
 
         return parser.parse_args()
 
-
     def main(self, args):
 
         if args.slack: self.slack = True
 
         if args.telegram: self.telegram = True
-
-        if args.saveNewSubdomain: self.saveToFile = True
 
         if args.listdomains: self.listAllDomains()
 
@@ -315,7 +309,7 @@ class SubDomainMonitoring:
 
         elif args.export: self.export()
 
-        else: self.monitor()
+        elif args.monitor: self.monitor()
 
 
 def banner():
@@ -331,7 +325,7 @@ def banner():
     ## {1}
     ## version {2}
     """
-    print(colored(BANNER.format("Monitor New Subdomain", "@omarelfarsaoui", version), 'red'))
+    print(colored(BANNER.format("Monitor New Subdomains", "@omarelfarsaoui", version), 'red'))
 
 
 if __name__ == "__main__":
