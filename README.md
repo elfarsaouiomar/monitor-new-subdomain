@@ -79,7 +79,13 @@ python3 check-new-subdomain.py -s
 python3 check-new-subdomain.py -t
 ```
 
-## example
+###
+**Also, you can setup a cron job to continue running the scanning and recive result via slack or telegram**
+```
+0 */5 * * * python3 /root/tools/monitor-new-subdomain/check-new-subdomain.py -m -t
+```
+
+### example
 
 **list all domains**
 
