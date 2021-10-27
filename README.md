@@ -79,13 +79,29 @@ python3 check-new-subdomain.py -s
 python3 check-new-subdomain.py -t
 ```
 
-###
-**Also, you can setup a cron job to continue running the scanning and recive result via slack or telegram**
+## Docker Section
+
+**Build**
+
 ```
-0 */5 * * * python3 /root/tools/monitor-new-subdomain/check-new-subdomain.py -m -t
+docker-compose build
 ```
 
-### example
+**run containers**
+```
+docker-compose up -d
+```
+
+you can easly eun command now inside containers
+
+```
+docker-compose run mns -a domain.com
+```
+
+Check out this video on youtube how to use MNS with docker
+https://www.youtube.com/watch?v=w47sCIqjAgQ
+
+## example
 
 **list all domains**
 
