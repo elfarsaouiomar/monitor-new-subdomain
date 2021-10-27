@@ -6,7 +6,7 @@ telegramToken = "xxxxxxxxxxxxxxxxxxxxxxxx"
 chatId = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # MongoDB DB
-dbHost = "127.0.0.1"
+dbHost = "mongo"
 dbPort = 27017
 dbName = "MonitoringSubdomain"
 collection = "subdomains"
