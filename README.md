@@ -135,7 +135,8 @@ https://www.youtube.com/watch?v=w47sCIqjAgQ
 
 ### Todo
  * ~~add output file~~
- * add Docker
+ * ~~add Docker~~
+ * Add snyk
  * add more subdomain resources
     * Certspotter
     * Virustotal
