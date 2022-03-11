@@ -8,7 +8,8 @@ on:
 
 
 jobs:
-  welcome:
+  auto-reply:
+    if: github.actor != 'elfarsaouiomar'
     runs-on: ubuntu-latest
     steps:
       - uses: EddieHubCommunity/gh-action-community/src/welcome@main
