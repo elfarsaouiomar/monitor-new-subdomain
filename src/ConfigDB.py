@@ -1,10 +1,12 @@
 from pymongo import MongoClient
-from src.Config import dbHost, dbPort, dbName, collection
+from src.Config import dbUser, dbPwd,dbHost, dbPort, dbName, collection
 
 
 
+print (dbUser, dbPwd)
 class ConfigDB:
-    client = MongoClient(dbHost, dbPort, serverSelectionTimeoutMS=3000)
+    client = MongoClient(dbHost, username=dbUser, password=dbPwd, serverSelectionTimeoutMS=3000)
+
     db = client[dbName]
     collection = db[collection]
 
