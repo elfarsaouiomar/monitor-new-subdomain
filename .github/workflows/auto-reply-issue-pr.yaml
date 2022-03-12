@@ -1,0 +1,20 @@
+name: auto reponse
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+
+jobs:
+  auto-reply:
+    if: github.actor != 'elfarsaouiomar'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: EddieHubCommunity/gh-action-community/src/welcome@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: "Hello, Thanks for opening an issue. \nIt's great to have your input on this project."
+          pr-message: "Thank you for contributing to this project."
+          footer: "Happy Hacking :fire:"
