@@ -56,19 +56,13 @@ class SubDomainMonitoring:
             return resp.get('results')
         return []
 
-    def getFormSublister(self, domain):
-        """ get list from sublister """
-        resp = get("https://api.sublist3r.com/search.php?domain={}".format(domain)).json()
-        if resp is not None:
-            return resp
-        return []
-
     def getdomain(self, domain):
         resultSubdomains = dict()
         resultSubdomains['domain'] = domain
         resultSubdomains["subdomains"] = list(set(
-            self.getFormSublister(domain=domain) + self.getFromCrt(domain=domain) + self.getFromThreatminer(
-                domain=domain)))
+            self.getFromCrt(domain=domain) + 
+            self.getFromThreatminer(domain=domain))
+            )
 
         return resultSubdomains
 
@@ -340,5 +334,6 @@ if __name__ == "__main__":
         exit(0)
 
     except Exception as error:
+        raise Exception(error)
         print(colored("[!] {0}".format(error), "red"))
 
