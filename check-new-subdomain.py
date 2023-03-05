@@ -1,110 +1,115 @@
 #!/usr/bin/env python
 # I don't believe in the license, you can do whatever you like
 
-version = "1.1"
-
-
-import argparse
-import threading
-from json import loads
-import dns.resolver
-import requests.packages.urllib3
-from requests import get
+from src.notifications import notifications
+from src.functions import get_current_time, notification_template, custom_logger
+from src.config import RESOLVERS_LIST
+from src.db import db
 from termcolor import colored
+from requests import get, exceptions
+from logging import basicConfig, getLogger, DEBUG, info, error, critical, StreamHandler, debug, warning 
+import requests.packages.urllib3
+import dns.resolver
+from json import loads
+import threading
+import argparse
+from random import choice
 
-from src.ConfigDB import ConfigDB
-from src.Config import resolverList
-from src.Functions import getCurrentTime, notificationTemplate
-from src.Notifications import Notifications
+
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
+ 
+# Create and configure logger
+logger = custom_logger("Sub_Domain_Monitoring")
 
 class SubDomainMonitoring:
-    db = ConfigDB()
-    sendNotification = Notifications()
-    slack = telegram = saveToFile = False
 
-    def parseCrtResponse(self, subdomains):
+    db_client = db()
+    send_notification = notifications()
+    slack = telegram = False
+
+    def parse_crt_response(self, subdomains):
         """ parse crt and return list of subomians (sort, clean, uniq) """
-        newSubdomains = list()
+        new_subdomains = list()
         try:
             for i in subdomains:
                 listsubdomians = i.split('\n')
                 for subDomain in listsubdomians:
-                    if subDomain not in newSubdomains:
+                    if subDomain not in new_subdomains:
                         subDomain = subDomain.replace("*.", "").replace("@", ".")
-                        newSubdomains.append(subDomain)
-
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
+                        new_subdomains.append(subDomain)
 
         except Exception as e:
-            print(colored("[!] error on parsing crt response \n [!] {}".format(e), "red"))
+            print(
+                colored("[!] error on parsing crt response \n [!] {}".format(e), "red"))
 
-        return newSubdomains
+        return new_subdomains
 
-    def getFromThreatminer(self, domain):
+    def get_subdomains_from_Threatminer(self, domain):
         """ get list from Threatminer """
-        url = "https://api.threatminer.org/v2/domain.php?q={}&rt=5".format(domain)
-        res = get(url)
-        if res.status_code != 200:
-            return []
+
+        url = f"https://api.threatminer.org/v2/domain.php?q={domain}&rt=5"
+        
+        res = get(url=url, timeout=30)
+
+        res.raise_for_status()
+        
         resp = res.json()
         if resp.get('results') is not None:
             return resp.get('results')
         return []
 
-    def getdomain(self, domain):
+    def get_new_subdomains(self, domain):
         resultSubdomains = dict()
         resultSubdomains['domain'] = domain
         resultSubdomains["subdomains"] = list(set(
-            self.getFromCrt(domain=domain) + 
-            self.getFromThreatminer(domain=domain))
-            )
+            self.get_subdomains_from_crt(domain=domain) +
+            self.get_subdomains_from_Threatminer(domain=domain))
+        )
 
         return resultSubdomains
 
-    def getFromCrt(self, domain):
+    def get_subdomains_from_crt(self, domain):
         """ get list of subdomain from crt """
-        resultSubdomains = list()
+        resultSubdomains = []
         try:
-            base_url = "https://crt.sh/?q={}&output=json"
-            victim = "%25.{}".format(domain)
-            url = base_url.format(victim)
+            url = f"https://crt.sh/?q=%25.{domain}&output=json"
 
-            user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:64.0) Gecko/20100101 Firefox/64.0'
-            req = get(url, headers={'User-Agent': user_agent}, timeout=30, verify=False)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:64.0) Gecko/20100101 Firefox/64.0"
+            }
 
-            if req.status_code == 200:
-                content = req.content.decode('utf-8')
-                data = loads(content)
-                subdomains = set()
-                for subdomain in data:
-                    subdomains.add(subdomain["name_value"].lower())
-                resultSubdomains = self.parseCrtResponse(sorted(subdomains))
+            req = get(url, headers=headers, timeout=30, verify=False)
+
+            req.raise_for_status()
+
+            content = req.content.decode('utf-8')
+            data = loads(content)
+
+            subdomains = set()
+            for subdomain in data:
+                subdomains.add(subdomain["name_value"].lower())
+            resultSubdomains = self.parse_crt_response(sorted(subdomains))
+
             return resultSubdomains
 
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
-
         except Exception as e:
-            print(colored("[!] error while requesting {} \n[!] {}".format(domain, e), "red"))
+            print(
+                colored("[!] error while requesting {} \n[!] {}".format(domain, e), "red"))
 
         return resultSubdomains
 
-    def scanSubdomain(self, subdomain):
-        dnsResolver = dns.resolver.Resolver()
-        dnsResolver.nameservers = resolverList
+    def resolver_new_subdomains(self, subdomain):
+        dns_resolver = dns.resolver.Resolver()
+        dns_resolver.nameservers = resolverList
 
         dnsResult = dict()
         dnsResult['subdomain'] = subdomain
         try:
             for qtype in ['A', 'CNAME']:
 
-                answers = dnsResolver.resolve(subdomain, qtype)
+                answers = dns_resolver.resolve(subdomain, qtype)
 
                 if answers.rrset is None:
                     pass
@@ -117,15 +122,12 @@ class SubDomainMonitoring:
                     cname_records = [str(i) for i in answers.rrset]
                     dnsResult["CNAME"] = cname_records
 
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
-
         except dns.exception.DNSException:
             pass
 
         except Exception as e:
-            print(colored("[!] Error while resolving subdomain \n[!] {}".format(e), "red"))
+            print(
+                colored("[!] Error while resolving subdomain \n[!] {}".format(e), "red"))
 
         finally:
             if dnsResult.get('A') is not None and dnsResult.get('CNAME') is not None:
@@ -133,11 +135,10 @@ class SubDomainMonitoring:
 
     def notify(self, message):
         """ send message via slack Or Telegram """
-        if self.slack:
-            self.sendNotification.slack(notificationTemplate(message))
 
-        if self.telegram:
-            self.sendNotification.telegrame(notificationTemplate(message))
+        self.send_notification.slack(notification_template(message)) if self.slack else None
+            
+        self.send_notification.telegrame(notification_template(message)) if self.telegram else None
 
     def compaire(self, subdomians):
         """ Compate a list of given subdomains and :return: return new subdomains """
@@ -145,169 +146,208 @@ class SubDomainMonitoring:
         try:
             domain = subdomians.get('domain')
             newsubDomain = subdomians.get('subdomains')
-            target = self.db._findOne(domain=domain)  # get all subdomian by domian name
+            # get all subdomian by domian name
+            target = self.db_client.find_one(domain=domain)
 
             if target is None:
-                print(colored("[+] new target {domain} : {length} subdomain ".format(domain=domain, length=len(newsubDomain)),"green"))
-                self.db._add(target=subdomians)
+                print(colored("[+] new target {domain} : {length} subdomain ".format(
+                    domain=domain, length=len(newsubDomain)), "green"))
+                self.db_client.add_domain(target=subdomians)
             else:
                 if len(newsubDomain) > 0:
                     oldSubdomain = target.get('subdomains')
                     diff = [x for x in newsubDomain if x not in oldSubdomain]
                     if len(diff) > 0:
-                        self.db._update(domain, diff)
-                        print(colored("[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
+                        self.db_client.update_domain(domain, diff)
+                        print(colored(
+                            "[+] {0} new subdomains found for {1}".format(len(diff), domain), "green"))
                         for subdomian in diff:
-                            pthread = threading.Thread(target=self.scanSubdomain, args=(subdomian,))
+                            pthread = threading.Thread(
+                                target=self.resolver_new_subdomains, args=(subdomian,))
                             pthread.start()
 
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
-
         except Exception as e:
-            print(colored("[!] error while comparing result \n[!] {}".format(e), "red"))
+            print(
+                colored("[!] error while comparing result \n[!] {}".format(e), "red"))
 
     def add(self, domain):
         """ Add new domain to Monitoring """
-        if self.db._findOne(domain=domain) is None:
-            self.compaire(self.getdomain(domain=domain))
+        
+        if self.db_client.find_one(domain=domain) is None:
+            self.compaire(self.get_new_subdomains(domain=domain))
         else:
-            print(colored("[+] {} already exist in database".format(domain), "green"))
+            print(
+                colored("[+] {} already exist in database".format(domain), "green"))
 
     def readfile(self, file):
         return open(file, 'r').readlines()
 
-    def importDomainsFromFile(self, file):
+    def import_domains_from_file(self, file):
         """ import list of domains from a text file """
         try:
             domains = self.readfile(file)
             for i in domains:
                 domain = i.strip()
                 if domain:
-                    print(colored("[+] import : ", "blue") + colored(domain, 'green', attrs=['reverse']))
+                    print(colored("[+] import : ", "blue") +
+                          colored(domain, 'green', attrs=['reverse']))
                     t = threading.Thread(target=self.add, args=(domain,))
                     t.start()
-
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
 
         except Exception as e:
             print(colored("[!] {0}".format(e), "red"))
 
-    def listAllDomains(self):
-        """ list all domain monitoring in DB """
-        for domain in self.db._findAll():
-            print(colored("[+] {}".format(domain.get('domain')), "green"), colored("{0}".format(len(domain.get('subdomains'))), "green"))
+    def list_all_domains(self):
+        """ list all domains  monitoring in DB """
+        for domain in self.db_client.find_all():
+            print(colored("[+] {}".format(domain.get('domain')), "green"),
+                  colored("{0}".format(len(domain.get('subdomains'))), "green"))
 
-    def getSubdomains(self, domain):
+    def get_subdomains(self, domain):
         """ return a list of subdomain for given domain """
-        target = self.db._findOne(domain=domain)
+
+        target = self.db_client.find_one(domain=domain)
         if target is not None:
             target = target.get('subdomains')
-            for i in target: print(i)
+            for i in target:
+                print(i)
         else:
-            print(colored("[+] domain {} not exist in database".format(domain), "green"))
+            logger.info(f"{domain} not exist in database")
 
-    def deleteDomain(self, domain):
+
+    def delete_domain(self, domain):
         """ Delete domain from database """
-        confirm = input('Are you sure want to delete [yes / no] : ')
-        if confirm == 'yes' or confirm == 'y':
-            self.db._delete(domain=domain)
-            print(colored("[+] delete {} from database".format(domain), "blue"))
+
+        self.db_client.delete_domain(domain=domain)
+        logger.info(f"Delete {domain} from database")
 
     def export(self):
         """ export all subdomain to text file """
-        try:
-            total = 0
-            all = self.db._findAll()
-            with open("export-" + getCurrentTime() + ".txt", "w") as file:
-                for domain in all:
-                    total = total + len(domain.get('subdomains'))
-                    for subdomain in domain.get('subdomains'):
-                        file.write(subdomain + "\n")
-            file.close()
-            print(colored("[+] Export {} from database ".format(total), "green"))
 
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
+        total = 0
+        all_domains = self.db_client.find_all()
 
-        except Exception as error:
-            print(colored("[!] {0}".format(error), "red"))
+        with open("export-" + get_current_time() + ".txt", "w") as file:
+            for domain in all_domains:
+                total = total + len(domain.get('subdomains'))
+                for subdomain in domain.get('subdomains'):
+                    file.write(subdomain + "\n")
+        file.close()
+        logger.info(f"[+] Export {total} from database")
+
+
 
     def monitor(self):
         """ Monitor All domains in database """
-        try:
-            for domain in self.db._findAll():
-                print(colored("[+] Checking : ", "blue") + colored(domain.get('domain'), 'green', attrs=['reverse']))
-                thread = threading.Thread(target=self.compaire, args=(self.getdomain(domain.get('domain')),))
-                thread.start()
-        except KeyboardInterrupt:
-            print(colored("[!] Ctrl+c detected", "yellow"))
-            exit(0)
 
-        except Exception as error:
-            print(colored("[!] {0}".format(error), "red"))
+        for domain in self.db_client.find_all():
+            print(colored("[+] Checking : ", "blue") +colored(domain.get('domain'), 'green', attrs=['reverse']))
+            logger.info(f"Checking")
+            thread = threading.Thread(target=self.compaire, args=(
+                self.get_new_subdomains(domain.get('domain')),))
+            thread.start()
 
     def initArgparse(self):
-        parser = argparse.ArgumentParser(description='Simple tools to monitoring new subdomains')
+        parser = argparse.ArgumentParser(
+            description='Simple tools to monitoring new subdomains')
 
-        parser.add_argument("-m", "--monitor", help="looking for new subdomain", type=bool, metavar='', required=False,
-                            nargs='?', const=True)
+        parser.add_argument("-m", "--monitor", help="looking for new subdomain", 
+                            type=bool, 
+                            metavar='', 
+                            required=False,
+                            nargs='?', 
+                            const=True)
 
-        parser.add_argument("-a", "--add", help="Domain to monitor. E.g: domain.com", type=str, metavar='',
+        parser.add_argument("-a", "--add", 
+                            help="Domain to monitor. E.g: domain.com", 
+                            type=str, 
+                            metavar='',
                             required=False)
 
-        parser.add_argument("-l", "--listdomains", help="list all domain on database", type=bool, metavar='',
+        parser.add_argument("-l", "--listdomains", 
+                            help="list all domain on database", 
+                            type=bool, 
+                            metavar='',
+                            required=False,
+                            const=True,
+                            nargs='?')
+
+        parser.add_argument("-i", "--importfile", 
+                            help="import Domains From File", 
+                            type=str, 
+                            metavar='',
+                            required=False)
+
+        parser.add_argument("-L", "--listsubdomains", 
+                            help="list all domain on for domain", 
+                            type=str, 
+                            metavar='',
+                            required=False)
+
+        parser.add_argument("-d", "--delete", 
+                            help="disable for monitoring", 
+                            type=str, 
+                            metavar='', 
+                            required=False)
+
+        parser.add_argument("-e", "--export", 
+                            help="export all subdomains for all domains into single file", 
+                            type=bool, 
+                            metavar='',
+                            required=False,
+                            const=True, 
+                            nargs='?')
+
+        parser.add_argument("-s", "--slack", 
+                            help="send notification via slack",
+                            type=bool, metavar='',
                             required=False,
                             const=True, nargs='?')
 
-        parser.add_argument("-i", "--importfile", help="import Domains From File", type=str, metavar='',
-                            required=False)
-
-        parser.add_argument("-L", "--listsubdomains", help="list all domain on for domain", type=str, metavar='',
-                            required=False)
-
-        parser.add_argument("-d", "--delete", help="disable for monitoring", type=str, metavar='', required=False)
-
-        parser.add_argument("-e", "--export", help="export all subdomains for all domains into single file", type=bool, metavar='',
+        parser.add_argument("-t", "--telegram",
+                            help="send notification via telegram",
+                            type=bool, 
+                            metavar='',
                             required=False,
-                            const=True, nargs='?')
-
-        parser.add_argument("-s", "--slack", help="send notification via slack", type=bool, metavar='', required=False,
-                            const=True, nargs='?')
-
-        parser.add_argument("-t", "--telegram", help="send notification via telegram", type=bool, metavar='',
-                            required=False,
-                            const=True, nargs='?')
+                            const=True, 
+                            nargs='?')
 
         return parser.parse_args()
 
     def main(self, args):
 
-        if args.slack: self.slack = True
+        if args.slack:
+            self.slack = True
 
-        if args.telegram: self.telegram = True
+        if args.telegram:
+            self.telegram = True
 
-        if args.listdomains: self.listAllDomains()
+        if args.listdomains:
+            self.list_all_domains()
 
-        elif args.listsubdomains: self.getSubdomains(domain=args.listsubdomains)
+        elif args.listsubdomains:
+            self.get_subdomains(domain=args.listsubdomains)
 
-        elif args.delete: self.deleteDomain(domain=args.delete)
+        elif args.delete:
+            self.delete_domain(domain=args.delete)
 
-        elif args.add: self.add(domain=args.add)
+        elif args.add:
+            self.add(domain=args.add)
 
-        elif args.importfile:  self.importDomainsFromFile(file=args.importfile)
+        elif args.importfile:
+            self.import_domains_from_file(file=args.importfile)
 
-        elif args.export: self.export()
+        elif args.export:
+            self.export()
 
-        elif args.monitor: self.monitor()
+        elif args.monitor:
+            self.monitor()
 
 
 def banner():
-    BANNER = """
+    colors = ['red', 'green', 'blue', 'yellow', 'magenta']
+    version = "2.0"
+    BANNER = f"""
 
         ███╗   ███╗███╗   ██╗███████╗
         ████╗ ████║████╗  ██║██╔════╝
@@ -315,11 +355,11 @@ def banner():
         ██║╚██╔╝██║██║╚██╗██║╚════██║
         ██║ ╚═╝ ██║██║ ╚████║███████║
         ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝
-    ## {0}
-    ## {1}
-    ## version {2}
+        ## Monitor New Subdomains
+        ## @omarelfarsaoui
+        ## version {version}
     """
-    print(colored(BANNER.format("Monitor New Subdomains", "@omarelfarsaoui", version), 'red'))
+    print(colored(BANNER, choice(colors)))
 
 
 if __name__ == "__main__":
@@ -329,11 +369,24 @@ if __name__ == "__main__":
         args = subdomainMonitoring.initArgparse()
         subdomainMonitoring.main(args)
 
+
+    except exceptions.HTTPError as errh:
+        print (colored(f"[-] Http Error: {errh}", "red"))
+        
+    except exceptions.ConnectionError as errc:
+        print (colored(f"[-] Error Connecting: {errc}", "red"))
+        
+    except exceptions.Timeout as errt:
+        print (colored(f"[-] Timeout Error: {errt}", "red"))
+
+    except exceptions.RequestException as err:
+        print (colored(f"[-] OOps: Something Else {err}", "red"))
+
     except KeyboardInterrupt:
-        print(colored("[-] Ctrl+c detected", "yellow"))
+        logger.info("[-] Ctrl+c detected")
         exit(0)
 
-    except Exception as error:
-        raise Exception(error)
-        print(colored("[!] {0}".format(error), "red"))
+    except Exception as err:
+        logger.error(err)
+        exit(1)
 
