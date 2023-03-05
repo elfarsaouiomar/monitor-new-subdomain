@@ -15,7 +15,7 @@ def notification_template(subdomain):
 
 def custom_logger(name):
     formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-2s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    handler = logging.FileHandler('logs.log')
+    handler = logging.FileHandler('logs/logs.log',)
     handler.setFormatter(formatter)
     screen_handler = logging.StreamHandler(stream=stdout)
     screen_handler.setFormatter(formatter)
@@ -24,3 +24,9 @@ def custom_logger(name):
     logger.addHandler(handler)
     logger.addHandler(screen_handler)
     return logger
+
+def raise_for_status(response, status_code):
+    """ 
+        Todo: write a function that used to check if status code equal to 200 and print (error message otherwise)
+    """
+    pass
