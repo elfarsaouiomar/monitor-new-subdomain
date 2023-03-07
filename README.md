@@ -35,12 +35,12 @@ $ pip3 install -r requirements.txt
 
 **add domain to monitor. E.g: domain.com**
 ```bash
-python3 check-new-subdomain.py -a  domain.com
+python3 mns.py -a  domain.com
 ```
 
 **list all domain in database**
 ```bash
-python3 check-new-subdomain.py -l
+python3 mns.py -l
 ```
 
 **get all subdomain for specific domain**
@@ -50,18 +50,18 @@ python3 check-new-subdomain.py -L domain.com
 
 **search fo new subdomain for all domains**
 ```bash
-python3 check-new-subdomain.py -m
+python3 mns.py -m
 ```
 **export all subdomains form the database to txt file**
 ```bash
-python3 check-new-subdomain.py -e
+python3 mns.py -e
 ```
 
 **import list of domains via file**
 
 _each domain in line_
 ```bash
-python3 check-new-subdomain.py -i domains.txt
+python3 mns.py -i domains.txt
 ```
 
 **delete domain**
@@ -71,12 +71,12 @@ python3 check-new-subdomain.py -d
 
 **send notification via slack**
 ```bash
-python3 check-new-subdomain.py -s
+python3 mns.py -s
 ```
 
 **send notification via telegram**
 ```bash
-python3 check-new-subdomain.py -t
+python3 mns.py -t
 ```
 
 ## Docker Section
