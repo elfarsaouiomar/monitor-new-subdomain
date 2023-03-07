@@ -7,14 +7,13 @@ from termcolor import colored
 import requests.packages.urllib3
 
 from src.mns import SubDomainMonitoring
-from src.service.functions import custom_logger
+from src.functions import custom_logger
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
 
 # Create and configure logger
 logger = custom_logger("Main")
-
 
 def show_banner():
 	colors = ['red', 'green', 'blue', 'yellow', 'magenta']
@@ -34,12 +33,14 @@ def show_banner():
 	print(colored(banner, choice(colors)))
 
 
-def main():
+if __name__ == "__main__":
 	try:
 		show_banner()
+		logger.info("start")
 		subdomains_monitoring = SubDomainMonitoring()
 		args = subdomains_monitoring.init_args()
 		subdomains_monitoring.main(args)
+		logger.info("done")
 	
 	except exceptions.HTTPError as http_error:
 		logger.error(f"[!] Http Error: {http_error}")
@@ -58,10 +59,5 @@ def main():
 		exit(0)
 	
 	except Exception as error:
-		# raise Exception(error)
 		logger.error(error)
 		exit(1)
-
-
-if __name__ == "__main__":
-	main()

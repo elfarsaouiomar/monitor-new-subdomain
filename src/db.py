@@ -2,10 +2,6 @@ from pymongo import MongoClient
 from src.config import DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PWD, COLLECTION_NAME
 
 
-class db:
-    pass
-
-
 class ConfigDB:
     client = MongoClient(
         host=DB_HOST,
@@ -39,3 +35,4 @@ class ConfigDB:
     def delete_domain(self, domain):
         """Delete domains and subdomians for a given domain"""
         self.collection.find_one_and_delete({"domain": domain})
+
