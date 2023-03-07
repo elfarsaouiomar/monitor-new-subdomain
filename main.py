@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # I don't believe in the license, you can do whatever you like
+<<<<<<< HEAD
 import asyncio
+=======
+
+>>>>>>> 1ee0a7b (* refactor the code)
 from random import choice
 from requests import exceptions
 from termcolor import colored
