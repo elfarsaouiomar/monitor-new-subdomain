@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # I don't believe in the license, you can do whatever you like
-<<<<<<< HEAD
-import asyncio
-=======
 
->>>>>>> 1ee0a7b (* refactor the code)
+import asyncio
 from random import choice
 from requests import exceptions
 from termcolor import colored
@@ -66,5 +63,40 @@ def main():
         exit(1)
 
 
+<<<<<<< HEAD
 if __name__ == "__main__":
     main()
+=======
+def main():
+	try:
+		show_banner()
+		logger.info("start")
+		subdomains_monitoring = SubDomainMonitoring()
+		args = subdomains_monitoring.init_args()
+		await subdomains_monitoring.main(args)
+		logger.info("done")
+	
+	except exceptions.HTTPError as http_error:
+		logger.error(f"[!] Http Error: {http_error}")
+	
+	except exceptions.ConnectionError as connection_error:
+		logger.error(f"[!] Error Connecting: {connection_error}")
+	
+	except exceptions.Timeout as timeout_error:
+		logger.error(f"[!] Timeout Error: {timeout_error}")
+	
+	except exceptions.RequestException as request_error:
+		logger.error(f"[!] Ops: Something Else: {request_error}")
+	
+	except KeyboardInterrupt:
+		logger.info("[!] Ctrl+c detected")
+		exit(0)
+	
+	except Exception as error:
+		raise Exception(error)
+		logger.error(error)
+		exit(1)
+
+
+if __name__ == "__main__":
+	main()
