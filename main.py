@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # I don't believe in the license, you can do whatever you like
-
+import asyncio
 from random import choice
 from requests import exceptions
 from termcolor import colored
@@ -14,6 +14,7 @@ requests.packages.urllib3.disable_warnings()
 
 # Create and configure logger
 logger = custom_logger("Main")
+
 
 def show_banner():
 	colors = ['red', 'green', 'blue', 'yellow', 'magenta']
@@ -33,13 +34,13 @@ def show_banner():
 	print(colored(banner, choice(colors)))
 
 
-if __name__ == "__main__":
+def main():
 	try:
 		show_banner()
 		logger.info("start")
 		subdomains_monitoring = SubDomainMonitoring()
 		args = subdomains_monitoring.init_args()
-		subdomains_monitoring.main(args)
+		await subdomains_monitoring.main(args)
 		logger.info("done")
 	
 	except exceptions.HTTPError as http_error:
@@ -62,3 +63,7 @@ if __name__ == "__main__":
 		raise Exception(error)
 		logger.error(error)
 		exit(1)
+
+
+if __name__ == "__main__":
+	main()
