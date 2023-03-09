@@ -109,7 +109,8 @@ class SubDomainMonitoring:
 		""" Add new domain to Monitoring """
 		
 		if self.db_client.find_one(domain=domain) is None:
-			self.compaire(self.get_new_subdomains(domain=domain))
+			subdomains = self.get_new_subdomains(domain=domain)
+			self.compaire(subdomains=subdomains)
 		else:
 			logger.info(f"[+] {domain} already exist in database")
 	
@@ -295,7 +296,7 @@ class SubDomainMonitoring:
 			self.export()
 		
 		elif args.monitor:
-			await self.monitor()
+			self.monitor()
 		
 		else:
-			await self.monitor()
+			self.monitor()
