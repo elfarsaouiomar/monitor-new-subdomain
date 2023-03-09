@@ -4,7 +4,7 @@
 import argparse, threading, dns.resolver, requests.packages.urllib3
 
 from termcolor import colored
-from multiprocessing import Process, queues
+from multiprocessing import Process, Queue
 
 from src.config import RESOLVERS_LIST
 from src.crtsh import Crtsh
@@ -31,13 +31,13 @@ class SubDomainMonitoring:
 		"""
 		Todo: add comments
 		"""
+		print('ddddddd')
 		subdomains = dict()
 		subdomains['domain'] = domain
 		subdomains["subdomains"] = list(set(
 				self.crtsh.get_subdomains(domain=domain) +
 				self.threatminer.get_subdomains(domain=domain))
 		)
-		
 		return subdomains
 	
 	def resolver_new_subdomains(self, subdomain) -> None:
@@ -113,7 +113,7 @@ class SubDomainMonitoring:
 		else:
 			logger.info(f"[+] {domain} already exist in database")
 	
-	def read_file(self, file) -> object:
+	async def read_file(self, file) -> object:
 		return open(file, 'r').readlines()
 	
 	def import_domains_from_file(self, file) -> None:
@@ -153,7 +153,7 @@ class SubDomainMonitoring:
 		else:
 			logger.info(f"{domain} not exist in database")
 	
-	def delete_domain(self, domain) -> None:
+	async def delete_domain(self, domain) -> None:
 		""" Delete domain from database """
 		
 		target = self.db_client.find_one(domain=domain)
@@ -187,31 +187,19 @@ class SubDomainMonitoring:
 		processes = []
 		# print(self.get_new_subdomains(target.get('domain')))
 		
-		queue = []
-		processes = []
-		for target in self.db_client.find_all():
-			p = Process(target=self.get_new_subdomains, args=(
-				
-				target.get('domain')
-			), )
-			p.start()
-			p.join()
-			
-			process = Process(target=self.compaire, args=(
-				self.get_new_subdomains(
-						target.get('domain')
-				),))
-			processes.append(process)
-			logger.info(f"[+] Check {target.get('domain')} for new subdomains")
+		domains = [target.get('domain') for target in self.db_client.find_all()]
+		queue = Queue()
+		
+		queue.put(Process(target=self.compaire, args=(
+			self.get_new_subdomains(
+					domains
+			),)).start())
 		
 		print("HOP")
 		print(processes)
 		
 		for proc in processes:
 			proc.start()
-		
-		for p in processes:
-			p.join()
 	
 	def init_args(self):
 		parser = argparse.ArgumentParser(
@@ -307,7 +295,7 @@ class SubDomainMonitoring:
 			self.export()
 		
 		elif args.monitor:
-			self.monitor()
+			await self.monitor()
 		
 		else:
-			self.monitor()
+			await self.monitor()
