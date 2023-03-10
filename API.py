@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pymongo import MongoClient
 from src.config import DB_HOST, DB_NAME, COLLECTION_NAME, DB_PORT
 from src.mns import SubDomainMonitoring
@@ -133,6 +133,14 @@ async def add_new_domain(domain: str):
 
 
 async def delete_domain(domain):
+	"""
+	This function used to delete domain from the database
+	Args:
+		domain:str -> domain name
+
+	Returns: success if the domain exist else nor found
+
+	"""
 	result = collection.find_one_and_delete({"domain": domain})
 	if result:
 		response = {"message": "Document deleted successfully"}
@@ -143,23 +151,29 @@ async def delete_domain(domain):
 
 @app.delete("/domain/{domain}")
 async def delete(domain: str):
+	"""
+	Endpoint to delete domain from the database
+	"""
 	response = await delete_domain(domain=domain)
 	return response
 
 
-"""
-TODO: later
 async def launch_monitoring():
-	mns.monitor()
-	return "Start Monitoring"
+	"""
+	This function
+	Returns: string
+
+	"""
+	
+	BackgroundTasks(mns.monitor())
+	return BackgroundTasks(mns.monitor())
 
 
 @app.get("/monitor")
 async def monitor():
-	"
-		Endpoint for launching the Monitoring processes.
-	"
+	"""
+	Endpoint for launching the Monitoring processes.
+	"""
+	
 	response = await launch_monitoring()
 	return response
-
-"""
