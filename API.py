@@ -118,7 +118,6 @@ async def add_domain(domain: str):
 	if subdomains is None:
 		mns.add(domain=domain)
 		return response_with_success(message=domain, code=201)
-	
 	return response_with_error(message="Domain already exists", code=409)
 
 
@@ -127,7 +126,6 @@ async def add_new_domain(domain: str):
 	"""
 		Endpoint for adding a new domain to the database.
 	"""
-	
 	response = await add_domain(domain=domain)
 	return response
 
@@ -152,7 +150,7 @@ async def delete_domain(domain):
 @app.delete("/domain/{domain}")
 async def delete(domain: str):
 	"""
-	Endpoint to delete domain from the database
+		Endpoint to delete domain from the database
 	"""
 	response = await delete_domain(domain=domain)
 	return response
@@ -164,16 +162,14 @@ async def launch_monitoring():
 	Returns: string
 
 	"""
-	
 	BackgroundTasks(mns.monitor())
-	return BackgroundTasks(mns.monitor())
+	return "Start Monitoring"
 
 
 @app.get("/monitor")
 async def monitor():
 	"""
-	Endpoint for launching the Monitoring processes.
+		Endpoint for launching the Monitoring processes.
 	"""
-	
 	response = await launch_monitoring()
 	return response
