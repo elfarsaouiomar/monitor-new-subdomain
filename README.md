@@ -21,6 +21,7 @@
  * Telegram bot *[Create Telegram bot](https://medium.com/@xabaras/sending-a-message-to-a-telegram-channel-the-easy-way-eb0a0b32968)* (optional)
 
 ### Intallation
+![docs](docs/Installation.md)
 
 MNS needs some dependencies, to install them on your 
 
@@ -92,10 +93,14 @@ docker-compose build
 docker-compose up -d
 ```
 
-you can easly eun command now inside containers
+you can easly run command now inside the container
 
 ```
 docker-compose run mns -a domain.com
+```
+
+```
+docker-compose run mns -l
 ```
 
 Check out this video on youtube how to use MNS with docker
