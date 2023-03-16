@@ -20,7 +20,7 @@ from src.threatminer import Threatminer
 requests.packages.urllib3.disable_warnings()
 
 # Create and configure logger
- logger = custom_logger("Sub_Domain_Monitoring")
+logger = custom_logger("Sub_Domain_Monitoring")
 
 
 class SubDomainMonitoring:
