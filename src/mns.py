@@ -45,12 +45,12 @@ class SubDomainMonitoring:
 
     def resolver_new_subdomains(self, subdomain) -> dict:
         """ This function used to resolve a given subdomain """
-
+        print(f"resolving {subdomain}")
         dns_resolver = dns.resolver.Resolver()
         dns_resolver.nameservers = RESOLVERS_LIST
 
-        dns_results = dict()
-        dns_results['subdomain'] = subdomain
+        results = dict()
+        results['subdomain'] = subdomain
         try:
             for qtype in ['A', 'CNAME']:
 
@@ -61,24 +61,21 @@ class SubDomainMonitoring:
 
                 elif answers.rdtype == 1:
                     a_records = [str(i) for i in answers.rrset]
-                    dns_results["A"] = a_records
+                    results["A"] = a_records
 
                 elif answers.rdtype == 5:
                     cname_records = [str(i) for i in answers.rrset]
-                    dns_results["CNAME"] = cname_records
+                    results["CNAME"] = cname_records
 
         except dns.exception.DNSException:
-
             pass
 
         except Exception as e:
             logger.error(f"[!] Error while resolving subdomains {e}")
 
         finally:
-            return dns_results
-        
-        	# if dns_results.get('A') is not None and dns_results.get('CNAME') is not None:
-			# 	self.notify(message=dns_results)
+            if results.get('A') is not None or results.get('CNAME') is not None:
+                self.notify(message=results)
 
     def notify(self, message) -> None:
         """ send message via slack Or Telegram """
@@ -97,13 +94,14 @@ class SubDomainMonitoring:
 
         # get all subdomains by domain name from dbs
         target_from_db = self.db_client.find_one(domain=domain)
+     
 
         # check if the domain is already in the dbs
         if target_from_db is None:
-            # logger.info(f"[+] new target {domain} : {len(new_subdomains)} subdomains ")
-            # self.db_client.add_domain(target=target)
-
-            return True
+            logger.info(f"[+] new target {domain} : {len(new_subdomains)} subdomains ")
+            self.db_client.add_domain(target=target)
+            
+            return new_subdomains
         else:
             # check if there any new subdomain(s) that not exist on the dbs
             if len(new_subdomains) > 0:
@@ -111,13 +109,15 @@ class SubDomainMonitoring:
                 compare_old_new_subdomains = [subdomain for subdomain in new_subdomains if subdomain not in old_subdomains]
 
                 # Add the new subdomains the the dbs using update function
-                # if len(compare_old_new_subdomains) > 0:
+                if len(compare_old_new_subdomains) > 0:
 
-                    # self.db_client.update_domain(
-                        # domain, compare_old_new_subdomains)
-                    # logger.info(f"[+] {len(compare_old_new_subdomains)} new subdomains found for {domain}")
+                    self.db_client.update_domain(
+                        domain, compare_old_new_subdomains)
+                    logger.info(f"[+] {len(compare_old_new_subdomains)} new subdomains found for {domain}")
 
-            return False
+                return compare_old_new_subdomains
+
+        return []
 
         # for subdomain in compare_old_new_subdomains:
         #     pthread = threading.Thread(
@@ -129,6 +129,7 @@ class SubDomainMonitoring:
 
         if self.db_client.find_one(domain=domain) is None:
             subdomains = self.get_new_subdomains(domain=domain)
+            print(subdomains)
             self.compare(target=subdomains)
         else:
             logger.info(f"[+] {domain} already exist in database")
@@ -200,29 +201,36 @@ class SubDomainMonitoring:
 
     def monitor(self) -> None:
         """ Monitor All domains in database """
+        
+        results = []
 
         domains = [target.get('domain')
                    for target in self.db_client.find_all()]
 
-        # print(domains)
-
         pool = Pool(processes=len(domains))
-        results = []
-
+        
         for domain in domains:
             async_result = pool.apply_async(self.get_new_subdomains, args=(domain,))
-            #results.append(async_result)
-            self.compare(target=async_result.get())
-            self.resolver_new_subdomains(subdomain=async_result.get().get('subdomain'))
-            #print(f"{async_result.get()}")
+            results.append(async_result)
 
-            print(results)
-            print("$"*100)
+        # new_subdomains = self.compare(target=async_result.get())
+        # for new_subdomain in new_subdomains:
+        #     self.resolver_new_subdomains(subdomain=new_subdomain)
 
+        # async_result.wait()
+        # print(async_result.ready())
+        # print("*"*100)
 
+        # while async_result.ready() is not True:
+        #     print("waiting for result to be True")
+         
 
         for t in results:
             new_subdomains = self.compare(target=t.get())
+            print(new_subdomains)
+            process = Process(target=self.resolver_new_subdomains, args=(new_subdomains,))
+            # for new_subdomain in new_subdomains:
+            #     self.resolver_new_subdomains(subdomain=new_subdomain)
 
         print(async_result.successful())
         # exit(1)
