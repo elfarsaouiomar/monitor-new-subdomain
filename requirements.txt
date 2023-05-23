@@ -34,4 +34,3 @@ starlette>=0.25.0
 tomli==2.0.1
 typing_extensions==4.7.1
 uvicorn==0.23.0
-
