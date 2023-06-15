@@ -1,4 +1,4 @@
-FROM python:3.12.0a5
+FROM python:3.12.0b1
 
 ADD . /app
 
