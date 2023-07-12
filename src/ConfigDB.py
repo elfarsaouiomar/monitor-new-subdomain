@@ -5,7 +5,7 @@ from src.Config import dbUser, dbPwd,dbHost, dbPort, dbName, collection
 
 print (dbUser, dbPwd)
 class ConfigDB:
-    client = MongoClient(dbHost, username=dbUser, password=dbPwd, serverSelectionTimeoutMS=3000)
+    client = MongoClient(dbHost, port=dbPort, username=dbUser, password=dbPwd, serverSelectionTimeoutMS=3000)
 
     db = client[dbName]
     collection = db[collection]
