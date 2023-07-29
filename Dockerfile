@@ -1,8 +1,8 @@
 FROM python:3.12.0b4
 
-ADD . /app
-
 WORKDIR /app
+
+ADD . /app
 
 RUN pip install -r requirements.txt
 
