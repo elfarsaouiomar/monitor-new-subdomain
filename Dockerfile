@@ -1,8 +1,8 @@
-FROM python:3.12.0b1
+FROM python:3.12.0b4
 
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+ADD . /app
 
 RUN pip install -r requirements.txt
 
