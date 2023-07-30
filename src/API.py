@@ -4,8 +4,10 @@ from pymongo import MongoClient
 from src.config import DB_HOST, DB_NAME, COLLECTION_NAME, DB_PORT
 from src.mns import SubDomainMonitoring
 
-app = FastAPI()
 mns = SubDomainMonitoring()
+router = APIRouter(
+    prefix="/v1",
+)
 
 # Initialize the MongoDB client
 client = MongoClient(f"mongodb://{DB_HOST}:{DB_PORT}")
@@ -51,8 +53,8 @@ async def get_domains():
 	return domains
 
 
-@app.get("/domains")
-async def list_domains():
+@router.get("/domains")
+async def list_domains() -> list:
 	"""
 		Endpoint for listing all domains in the database.
 	"""
@@ -60,8 +62,8 @@ async def list_domains():
 	return {"domains": domains}
 
 
-@app.get("/domain/{domain}")
-async def get_domain_by_name(domain: str):
+@router.get("/subdomains/{domain}")
+async def get_subdomains_by_domain(domain: str) -> list:
 	"""
 		Endpoint for getting a domain by name.
 	"""
@@ -85,8 +87,7 @@ async def add_domain(domain: str):
 		return domain
 	return "Domain already exists"
 
-
-@app.post("/domain")
+@router.post("/domain")
 async def add_new_domain(domain: str):
 	"""
 		Endpoint for adding a new domain to the database.
@@ -105,7 +106,7 @@ async def delete_domain(domain):
 	return response
 
 
-@app.delete("/domain/{domain}")
+@router.delete("/domain/{domain}")
 async def delete(domain: str):
 	response = await delete_domain(domain=domain)
 	return response
@@ -117,7 +118,7 @@ async def launch_monitoring():
 	return "Start Monitoring"
 
 
-@app.get("/monitor")
+@router.get("/monitor")
 async def monitor():
 	"
 		Endpoint for launching the Monitoring processes.
