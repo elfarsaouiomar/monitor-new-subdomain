@@ -9,12 +9,12 @@ import requests.packages.urllib3
 from termcolor import colored
 from multiprocessing import Pool, Process, Queue
 
-from src.config import RESOLVERS_LIST
-from src.crtsh import Crtsh
-from src.db import db
-from src.functions import get_current_time, notification_template, custom_logger
-from src.notifications import notifications
-from src.threatminer import Threatminer
+from .config import RESOLVERS_LIST
+from .crtsh import Crtsh
+from .db import db
+from .functions import get_current_time, notification_template, custom_logger
+from .notifications import notifications
+from .threatminer import Threatminer
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
@@ -34,7 +34,6 @@ class SubDomainMonitoring:
         """
         Todo: add comments
         """
-        print('[+] start getting new sundomains', domain)
         subdomains = dict()
         subdomains['domain'] = domain
         subdomains["subdomains"] = list(set(
@@ -45,7 +44,6 @@ class SubDomainMonitoring:
 
     def resolver_new_subdomains(self, subdomain) -> dict:
         """ This function used to resolve a given subdomain """
-        print(f"resolving {subdomain}")
         dns_resolver = dns.resolver.Resolver()
         dns_resolver.nameservers = RESOLVERS_LIST
 
@@ -86,7 +84,7 @@ class SubDomainMonitoring:
         self.send_notification.telegrame(
             notification_template(message)) if self.telegram else None
 
-    def compare(self, target) -> bool:
+    def compare(self, target) -> list:
         """ Compare a list of given subdomains and :return: return a new subdomains list """
 
         domain = target.get('domain')
@@ -108,7 +106,8 @@ class SubDomainMonitoring:
                 old_subdomains = target_from_db.get('subdomains')
                 compare_old_new_subdomains = [subdomain for subdomain in new_subdomains if subdomain not in old_subdomains]
 
-                # Add the new subdomains the the dbs using update function
+                # Update the database recodres
+                # Add new founded subdomains
                 if len(compare_old_new_subdomains) > 0:
 
                     self.db_client.update_domain(
@@ -118,23 +117,18 @@ class SubDomainMonitoring:
                 return compare_old_new_subdomains
 
         return []
-
-        # for subdomain in compare_old_new_subdomains:
-        #     pthread = threading.Thread(
-        #         target=self.resolver_new_subdomains, args=(subdomain,))
-        #     pthread.start()
+    
 
     def add(self, domain) -> None:
         """ Add new domain to Monitoring """
 
         if self.db_client.find_one(domain=domain) is None:
             subdomains = self.get_new_subdomains(domain=domain)
-            print(subdomains)
             self.compare(target=subdomains)
         else:
             logger.info(f"[+] {domain} already exist in database")
 
-    def read_file(self, file) -> object:
+    def read_file(self, file) -> list:
         return open(file, 'r').readlines()
 
     def import_domains_from_file(self, file) -> None:
@@ -159,13 +153,12 @@ class SubDomainMonitoring:
 
     def list_all_domains(self) -> list:
         """ list all domains from the DB """
-
         for results in self.db_client.find_all():
-            print(colored(
-                f"[+] {results.get('domain')} {len(results.get('subdomains'))}", "green"))
+            print(colored(f"[+] {results.get('domain')} {len(results.get('subdomains'))}", "green"))
 
-    def get_subdomains(self, domain) -> object:
-        """ return a list of subdomain for given domain """
+
+    def get_subdomains(self, domain) -> dict:
+        """ return a list of subdomains for given domain """
 
         target = self.db_client.find_one(domain=domain)
         if target is not None:
@@ -206,40 +199,18 @@ class SubDomainMonitoring:
 
         domains = [target.get('domain')
                    for target in self.db_client.find_all()]
-
-        pool = Pool(processes=len(domains))
         
-        for domain in domains:
-            async_result = pool.apply_async(self.get_new_subdomains, args=(domain,))
-            results.append(async_result)
+        if len(domains) > 0:
 
-        # new_subdomains = self.compare(target=async_result.get())
-        # for new_subdomain in new_subdomains:
-        #     self.resolver_new_subdomains(subdomain=new_subdomain)
+            pool = Pool(processes=len(domains))
+            for domain in domains:
+                print(colored(f"[+] Scan {domain} for new subdomains ", "yellow"))
+                async_result = pool.apply_async(self.get_new_subdomains, args=(domain,))
+                results.append(async_result)         
 
-        # async_result.wait()
-        # print(async_result.ready())
-        # print("*"*100)
-
-        # while async_result.ready() is not True:
-        #     print("waiting for result to be True")
-         
-
-        for t in results:
-            new_subdomains = self.compare(target=t.get())
-            print(new_subdomains)
-            process = Process(target=self.resolver_new_subdomains, args=(new_subdomains,))
-            # for new_subdomain in new_subdomains:
-            #     self.resolver_new_subdomains(subdomain=new_subdomain)
-
-        print(async_result.successful())
-        # exit(1)
-
-            #print(len(new_subdomains))
-            #if len(new_subdomains) > 0:
-            #    self.notify(message=new_subdomains)
-            #     with Pool(processes=len(new_subdomains)) as pool:
-            #         pool.map(self.compare, new_subdomains)
+            for result in results:
+                new_subdomains = self.compare(target=result.get())
+                Process(target=self.resolver_new_subdomains, args=(new_subdomains,))
 
     def init_args(self):
         parser = argparse.ArgumentParser(
@@ -259,7 +230,7 @@ class SubDomainMonitoring:
                             required=False)
 
         parser.add_argument("-l", "--listdomains",
-                            help="list all domain on database",
+                            help="List all domain on database",
                             type=bool,
                             metavar='',
                             required=False,
@@ -302,7 +273,7 @@ class SubDomainMonitoring:
                             help="send notification via telegram",
                             type=bool,
                             metavar='',
-                            required=False,
+                            rpequired=False,
                             const=True,
                             nargs='?')
 

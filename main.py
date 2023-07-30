@@ -37,26 +37,20 @@ def show_banner():
 def main():
     try:
         show_banner()
-        logger.info("start")
         subdomains_monitoring = SubDomainMonitoring()
         args = subdomains_monitoring.init_args()
         subdomains_monitoring.main(args)
-        logger.info("done")
 
     except exceptions.HTTPError as http_error:
-        raise Exception(http_error)
         logger.error(f"[!] Http Error: {http_error}")
 
     except exceptions.ConnectionError as connection_error:
-        raise Exception(connection_error)
         logger.error(f"[!] Error Connecting: {connection_error}")
 
     except exceptions.Timeout as timeout_error:
-        raise Exception(timeout_error)
         logger.error(f"[!] Timeout Error: {timeout_error}")
 
     except exceptions.RequestException as request_error:
-        raise Exception(request_error)
         logger.error(f"[!] Ops: Something Else: {request_error}")
 
     except KeyboardInterrupt:
@@ -64,7 +58,6 @@ def main():
         exit(0)
 
     except Exception as error:
-        raise Exception(error)
         logger.error(error)
         exit(1)
 
