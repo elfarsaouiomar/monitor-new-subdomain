@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import configparser
 
 config = configparser.ConfigParser()
@@ -22,5 +23,3 @@ DB_PWD = config.get('DATABASE', 'DB_PWD')
 resolvers_list = config.get('RESOLVERS', 'RESOLVERS_LIST').split('\n')
 # Remove empty entries
 RESOLVERS_LIST = [resolver.strip() for resolver in resolvers_list if resolver.strip()]
-
-
