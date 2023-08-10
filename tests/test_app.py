@@ -2,9 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 from mongomock import MongoClient
 
-from .context import src
+from .context import api
 
-app = src.API.create_app()
+app = api.create_app()
 
 testclient = TestClient(app)
 
@@ -37,7 +37,6 @@ def test_add_new_domain():
                                     "domain": domain_name
                                     }
                             )
-    print(response.url)
     assert response.status_code == 201
     assert response.json()["success"] is True
     assert response.json()["message"] == domain_name
