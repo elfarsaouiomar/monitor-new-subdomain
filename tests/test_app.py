@@ -1,28 +1,27 @@
 import pytest
 from fastapi.testclient import TestClient
 from mongomock import MongoClient
-
 from .context import api
 
 app = api.create_app()
-
 testclient = TestClient(app)
 
-# Mocking the MongoClient for testing
+## Mocking the MongoClient for testing
 @pytest.fixture
 def mock_mongo_client(monkeypatch):
     def mock_mongo_client_fn(*args, **kwargs):
         return MongoClient()
-
     monkeypatch.setattr("pymongo.MongoClient", mock_mongo_client_fn)
 
 
+## test ping 
 def test_ping():
     response = testclient.get("/api/v1/ping")
     assert response.status_code == 200
     assert response.json() == {"success": True, "code": 200, "message": "pong"}
 
 
+## test list all domains from db 
 def test_list_domains():
     response = testclient.get("/api/v1/domains")
     assert response.status_code == 200
@@ -30,6 +29,8 @@ def test_list_domains():
     assert isinstance(response.json()["message"], list)
 
 
+## test add new domain to the db
+## Test adding a duplicate domain
 def test_add_new_domain():
     domain_name = "heckerone.com"
     response = testclient.post("/api/v1/domain",
@@ -51,6 +52,8 @@ def test_add_new_domain():
     assert response.json()["message"] == "Domain already exists"
 
 
+## test listing subdomains for a domain
+## test getting subdomains for a non-existent domain
 def test_get_subdomains_by_domain():
     domain_name = "heckerone.com"
 
@@ -67,6 +70,15 @@ def test_get_subdomains_by_domain():
     assert response.json()["message"] == "not found"
 
 
+## test to start Monitoring 
+def test_monitor():
+    response = testclient.get("/api/v1/monitor")
+    assert response.status_code == 201
+    assert response.json()["success"] is True
+    assert response.json()["message"] == "start Monitoring"
+
+
+## test Delete domain from db 
 def test_delete_domain():
     domain_name = "heckerone.com"
 
@@ -82,11 +94,5 @@ def test_delete_domain():
     assert response.json()["success"] is False
     assert response.json()["message"] == "not found"
 
-
-def test_monitor():
-    response = testclient.get("/api/v1/monitor")
-    assert response.status_code == 201
-    assert response.json()["success"] is True
-    assert response.json()["message"] == "start Monitoring"
 
 
