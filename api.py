@@ -6,8 +6,9 @@ from src.mns import SubDomainMonitoring
 
 mns = SubDomainMonitoring()
 router = APIRouter(
-    prefix="/v1",
+		prefix="/v1",
 )
+collection = MnsRepository()
 
 # Initialize the MongoDB client
 client = MongoClient(f"mongodb://{DB_HOST}:{DB_PORT}")
@@ -71,7 +72,6 @@ async def get_subdomains_by_domain(domain: str) -> list:
 	if not doc:
 		raise HTTPException(status_code=404, detail="Domain not found")
 	return doc
-
 
 async def add_domain(domain: str):
 	"""

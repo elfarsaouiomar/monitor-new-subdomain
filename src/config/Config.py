@@ -7,6 +7,8 @@ config.read('config.config')
 # Read Slack configuration
 SLACK_WEBHOOK_URL = config.get('SLACK', 'SLACK_WEBHOOK_URL')
 
+
+
 # Read Telegram configuration
 TELEGRAM_TOKEN = config.get('TELEGRAM', 'TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = config.get('TELEGRAM', 'TELEGRAM_CHAT_ID')

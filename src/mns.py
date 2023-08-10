@@ -6,12 +6,12 @@ import argparse, threading, dns.resolver, requests.packages.urllib3
 from termcolor import colored
 from multiprocessing import Process, Queue
 
-from .config import RESOLVERS_LIST
-from .crtsh import Crtsh
-from .db import db
-from .functions import get_current_time, notification_template, custom_logger
-from .notifications import notifications
-from .threatminer import Threatminer
+from src.config.Config import RESOLVERS_LIST
+from src.service.Crtsh import Crtsh
+from src.db.MnsRepository import MnsRepository
+from src.service.functions import get_current_time, notification_template, custom_logger
+from src.service.Notifications import Notifications
+from src.service.Threatminer import Threatminer
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
