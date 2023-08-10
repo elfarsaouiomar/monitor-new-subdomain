@@ -1,0 +1,6 @@
+venv/
+.github/
+docs/
+README.md/
+*.log
+.pytest_cache/

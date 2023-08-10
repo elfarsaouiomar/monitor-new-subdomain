@@ -1,7 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks, APIRouter, status
 from pymongo import MongoClient
-from .config import DB_HOST, DB_NAME, COLLECTION_NAME, DB_PORT
-from .mns import SubDomainMonitoring
+from config import DB_HOST, DB_NAME, COLLECTION_NAME, DB_PORT
+from mns import SubDomainMonitoring
 from fastapi.responses import JSONResponse
 
 mns = SubDomainMonitoring()

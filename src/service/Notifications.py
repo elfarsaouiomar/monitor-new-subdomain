@@ -1,7 +1,6 @@
 from requests import post
-from termcolor import colored
-from src.config import SLACK_WEBHOOK_URL, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
-from src.functions import custom_logger
+from config import SLACK_WEBHOOK_URL, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from functions import custom_logger
 
 
 class notifications:

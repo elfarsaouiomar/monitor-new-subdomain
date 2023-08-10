@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from .config import DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PWD, COLLECTION_NAME
+from src.config.config import DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PWD, COLLECTION_NAME
 
 
 class db:
