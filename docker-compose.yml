@@ -6,7 +6,7 @@ services:
       ports:
       - "27020:27017"
       volumes:
-      - db:/data/db
+      - db:/data/MnsRepository
 
     mns:
       build:
@@ -16,6 +16,20 @@ services:
         - ./:/app
       depends_on:
         - mongo
+      entrypoint: ["python3","main.py"]
+
+    api:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      volumes: 
+        - ./:/app
+      depends_on:
+        - mongo
+        - mns
+      ports:
+        - "8000:8000"
+      entrypoint: ["bash", "/app/start-api.sh"]
 
 volumes:
   db:

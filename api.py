@@ -1,25 +1,23 @@
 from fastapi import FastAPI, BackgroundTasks, APIRouter, status
 from pymongo import MongoClient
-from config import DB_HOST, DB_NAME, COLLECTION_NAME, DB_PORT
-from mns import SubDomainMonitoring
 from fastapi.responses import JSONResponse
+import uvicorn
+from src.mns import SubDomainMonitoring
+from src.db.MnsRepository import MnsRepository 
+
+
 
 mns = SubDomainMonitoring()
 router = APIRouter(
-    prefix="/v1",
+		prefix="/v1",
 )
+collection = MnsRepository()
 
-# Initialize the FlstAPI() App
+# Initialize the FastAPI() App
 def create_app():
-    app = FastAPI()
-    app.include_router(router, prefix="/api")
-    return app
-
-
-# Initialize the MongoDB client
-client = MongoClient(f"mongodb://{DB_HOST}:{DB_PORT}")
-db = client[DB_NAME]
-collection = db[COLLECTION_NAME]
+	app = FastAPI()
+	app.include_router(router, prefix="/api")
+	return app
 
 
 def helper(data):
@@ -44,11 +42,11 @@ def response_with_success(message, code=status.HTTP_200_OK):
 
 	"""
 	return JSONResponse(status_code=code,
-		     			content={
-							"success": True,
-							"code": code,
-							"message": message
-						})
+	                    content={
+		                    "success": True,
+		                    "code": code,
+		                    "message": message
+	                    })
 
 
 def response_with_error(message, code):
@@ -62,11 +60,11 @@ def response_with_error(message, code):
 	Returns: dict()
 	"""
 	return JSONResponse(status_code=code,
-		     			content={
-							"success": False,
-							"code": code,
-							"message": message
-						})
+	                    content={
+		                    "success": False,
+		                    "code": code,
+		                    "message": message
+	                    })
 
 
 async def list_subdomains_by_domain(domain: str):
@@ -76,9 +74,9 @@ async def list_subdomains_by_domain(domain: str):
 	:return: A list of domain documents.
 	"""
 	subdomains = collection.find_one({"domain": domain})
-
+	
 	if subdomains is not None:
-			return response_with_success(message=helper(subdomains), code=status.HTTP_200_OK)
+		return response_with_success(message=helper(subdomains), code=status.HTTP_200_OK)
 	return response_with_error(message="not found", code=status.HTTP_404_NOT_FOUND)
 
 
@@ -96,7 +94,7 @@ async def get_domains():
 
 	Returns A list of domain documents.
 	"""
-	domains = [ target.get('domain') for target in collection.find() ]
+	domains = [target.get('domain') for target in collection.find_all()]
 	return response_with_success(message=domains, code=status.HTTP_200_OK)
 
 
@@ -118,7 +116,6 @@ async def get_subdomains_by_domain(domain: str) -> list:
 	return response
 
 
-
 async def add_domain(domain: str):
 	"""
 	Add a domain to the database.
@@ -128,12 +125,12 @@ async def add_domain(domain: str):
 	
 	# subdomains = await list_subdomains_by_domain(domain)
 	subdomains = collection.find_one({"domain": domain})
-
+	
 	if subdomains is None:
 		BackgroundTasks(mns.add(domain=domain))
 		return response_with_success(message=domain, code=status.HTTP_201_CREATED)
 	return response_with_error(message="Domain already exists", code=status.HTTP_409_CONFLICT)
-	
+
 
 @router.post("/domain")
 async def add_new_domain(domain: str):
@@ -153,7 +150,7 @@ async def delete_domain(domain: str):
 	Returns: success if the domain exist else nor found
 
 	"""
-	subdomains = collection.find_one_and_delete({"domain": domain})
+	subdomains = collection.delete_domain({"domain": domain})
 	if subdomains:
 		BackgroundTasks(mns.delete_domain(domain=domain))
 		return response_with_success(message="domain deleted successfully", code=status.HTTP_204_NO_CONTENT)
@@ -188,6 +185,8 @@ async def monitor():
 	return response
 
 
-
-
 app = create_app()
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=1337)

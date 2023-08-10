@@ -1,10 +1,10 @@
 from requests import post
-from config import SLACK_WEBHOOK_URL, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
-from functions import custom_logger
+from src.config.Config import SLACK_WEBHOOK_URL, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from src.service.functions import custom_logger
 
 
-class notifications:
-    logger = custom_logger("notifications") 
+class Notifications:
+    logger = custom_logger("Notifications")
 
     headers = {"Content-Type": "application/json"}
 

@@ -2,19 +2,18 @@
 # I don't believe in the license, you can do whatever you like
 
 import argparse
-import threading
 import dns.resolver
 import requests.packages.urllib3
 
 from termcolor import colored
-from multiprocessing import Pool, Process, Queue
+from multiprocessing import Pool, Process
 
-from .config import RESOLVERS_LIST
-from .crtsh import Crtsh
-from .db import db
-from .functions import get_current_time, notification_template, custom_logger
-from .notifications import notifications
-from .threatminer import Threatminer
+from src.config.Config import RESOLVERS_LIST
+from src.service.Crtsh import Crtsh
+from src.db.MnsRepository import MnsRepository
+from src.service.functions import get_current_time, notification_template, custom_logger
+from src.service.Notifications import Notifications
+from src.service.Threatminer import Threatminer
 
 # disable requests warnings
 requests.packages.urllib3.disable_warnings()
@@ -24,8 +23,8 @@ logger = custom_logger("Sub_Domain_Monitoring")
 
 
 class SubDomainMonitoring:
-    db_client = db()
-    send_notification = notifications()
+    db_client = MnsRepository()
+    send_notification = Notifications()
     crtsh = Crtsh()
     threatminer = Threatminer()
     slack = telegram = False
@@ -273,7 +272,7 @@ class SubDomainMonitoring:
                             help="send notification via telegram",
                             type=bool,
                             metavar='',
-                            rpequired=False,
+                            required=False,
                             const=True,
                             nargs='?')
 

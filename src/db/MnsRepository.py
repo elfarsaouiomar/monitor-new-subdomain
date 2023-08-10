@@ -1,19 +1,23 @@
 from pymongo import MongoClient
-from src.config.config import DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PWD, COLLECTION_NAME
+from src.config.Config import DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PWD, COLLECTION_NAME
 
 
-class db:
-	client = MongoClient(host=DB_HOST, port=DB_PORT, username=DB_USER, password=DB_PWD, serverSelectionTimeoutMS=3000)
+class MnsRepository:
+	client = MongoClient(host=DB_HOST,
+	                     port=DB_PORT,
+	                     username=DB_USER,
+	                     password=DB_PWD,
+	                     serverSelectionTimeoutMS=3000)
 	
 	db = client[DB_NAME]
 	collection = db[COLLECTION_NAME]
 	
 	def find_all(self):
-		""" Return all subdomains """
+		""" Return all domains """
 		return self.collection.find()
 	
 	def find_one(self, domain):
-		""" Retrun all subdomains for a given domain """
+		""" Return a list of subdomains """
 		return self.collection.find_one({"domain": domain})
 	
 	def add_domain(self, target):
@@ -21,9 +25,9 @@ class db:
 		self.collection.insert_one(target)
 	
 	def update_domain(self, domain, newsubdomains):
-		""" Update subdomains for a given domain """
+		""" Update subdomains """
 		for subdomain in newsubdomains: self.collection.update({"domain": domain}, {"$push": {"subdomains": subdomain}})
 	
 	def delete_domain(self, domain):
-		""" Delete domains and subdomains for a given domain """
+		""" Delete domain """
 		self.collection.find_one_and_delete({"domain": domain})
