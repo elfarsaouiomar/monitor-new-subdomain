@@ -24,9 +24,3 @@ def custom_logger(name):
     logger.addHandler(handler)
     logger.addHandler(screen_handler)
     return logger
-
-def raise_for_status(response, status_code):
-    """ 
-        Todo: write a function that used to check if status code equal to 200 and print (error message otherwise)
-    """
-    pass
