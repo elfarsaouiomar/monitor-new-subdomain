@@ -13,7 +13,3 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 ADD . /app
-
-RUN chmod +x start-api.sh
-
-EXPOSE 8080

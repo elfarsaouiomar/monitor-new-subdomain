@@ -28,8 +28,8 @@ services:
         - mongo
         - mns
       ports:
-        - "8000:8000"
-      entrypoint: ["bash", "/app/start-api.sh"]
+        - "1337:1337"
+      entrypoint: ["python3", "api.py"]
 
 volumes:
   db:
