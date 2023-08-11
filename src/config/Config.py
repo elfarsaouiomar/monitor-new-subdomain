@@ -1,25 +1,26 @@
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/xxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxx"
+import configparser
 
-TELEGRAM_TOKEN = "xxxxxxxxxxxxxxxxxxxxxxxx"
-TELEGRAM_CHAT_ID = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+config = configparser.ConfigParser()
+config.read('config.config')
 
-DB_HOST = "127.0.0.1" # 127.0.0.1
+# Read Slack configuration
+SLACK_WEBHOOK_URL = config.get('SLACK', 'SLACK_WEBHOOK_URL')
 
-DB_PORT = 27017
-DB_NAME = "MonitoringSubdomain"
-COLLECTION_NAME = "subdomains"
-DB_USER = ""
-DB_PWD = ""
+# Read Telegram configuration
+TELEGRAM_TOKEN = config.get('TELEGRAM', 'TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = config.get('TELEGRAM', 'TELEGRAM_CHAT_ID')
 
-RESOLVERS_LIST = [
-            '1.1.1.1',
-            '1.0.0.1',
-            '8.8.8.8',
-            '8.8.4.4',
-            '9.9.9.9',
-            '9.9.9.10',
-            '77.88.8.8',
-            '77.88.8.1',
-            '208.67.222.222',
-            '208.67.220.220'
-        ]
+# Read Database configuration
+DB_HOST = config.get('DATABASE', 'DB_HOST')
+DB_PORT = config.getint('DATABASE', 'DB_PORT')
+DB_NAME = config.get('DATABASE', 'DB_NAME')
+COLLECTION_NAME = config.get('DATABASE', 'COLLECTION_NAME')
+DB_USER = config.get('DATABASE', 'DB_USER')
+DB_PWD = config.get('DATABASE', 'DB_PWD')
+
+# Read Resolvers configuration
+resolvers_list = config.get('RESOLVERS', 'RESOLVERS_LIST').split('\n')
+# Remove empty entries
+RESOLVERS_LIST = [resolver.strip() for resolver in resolvers_list if resolver.strip()]
+
+
