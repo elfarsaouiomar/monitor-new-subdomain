@@ -7,4 +7,4 @@ MarkupSafe==2.0.1
 pymongo==3.11.4
 requests==2.31.0
 termcolor==1.1.0
-urllib3==1.26.5
+urllib3==1.26.17
