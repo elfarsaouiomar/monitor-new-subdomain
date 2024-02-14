@@ -23,7 +23,7 @@
 ### Intallation
 ![docs](docs/Installation.md)
 
-MNS needs some dependencies, to install them on your 
+MNS needs some dependencies.
 
 ```bash
 $ git clone https://github.com/elfarsaouiomar/monitor-new-subdomain.git
@@ -36,12 +36,12 @@ $ pip3 install -r requirements.txt
 
 **add domain to monitor. E.g: domain.com**
 ```bash
-python3 mns.py -a  domain.com
+python3 main.py -a  domain.com
 ```
 
 **list all domain in database**
 ```bash
-python3 mns.py -l
+python3 main.py -l
 ```
 
 **get all subdomain for specific domain**
@@ -51,18 +51,18 @@ python3 check-new-subdomain.py -L domain.com
 
 **search fo new subdomain for all domains**
 ```bash
-python3 mns.py -m
+python3 main.py -m
 ```
 **export all subdomains form the database to txt file**
 ```bash
-python3 mns.py -e
+python3 main.py -e
 ```
 
 **import list of domains via file**
 
 _each domain in line_
 ```bash
-python3 mns.py -i domains.txt
+python3 main.py -i domains.txt
 ```
 
 **delete domain**
@@ -72,12 +72,12 @@ python3 check-new-subdomain.py -d
 
 **send notification via slack**
 ```bash
-python3 mns.py -s
+python3 main.py -s
 ```
 
 **send notification via telegram**
 ```bash
-python3 mns.py -t
+python3 main.py -t
 ```
 
 ## Docker Section
