@@ -1,6 +1,6 @@
 certifi==2023.7.22
 chardet==3.0.4
-dnspython==2.6.0rc1
+dnspython==2.6.1
 idna==3.7
 Jinja2==3.1.4
 MarkupSafe==2.0.1
