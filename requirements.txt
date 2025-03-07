@@ -2,7 +2,7 @@ certifi==2023.7.22
 chardet==3.0.4
 dnspython==2.6.1
 idna==3.7
-Jinja2==3.1.4
+Jinja2==3.1.6
 MarkupSafe==2.0.1
 pymongo==4.6.3
 requests==2.32.0
