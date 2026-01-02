@@ -1,21 +1,30 @@
-version: '3'
-
 services:
-    mongo:
-      image: mongo:latest
-      ports:
-      - "27020:27017"
-      volumes:
-      - db:/data/db
+  mongodb:
+    image: mongo:7.0
+    container_name: subdomain_monitor_db
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: subdomain_monitor
 
-    mns:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      volumes: 
-        - ./:/app
-      depends_on:
-        - mongo
+  api:
+    build: .
+    container_name: subdomain_monitor_api
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    environment:
+      DB_HOST: mongodb
+      DB_PORT: 27017
+      DB_NAME: subdomain_monitor
+    volumes:
+      - .:/app
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:
-  db:
+  mongodb_data:
