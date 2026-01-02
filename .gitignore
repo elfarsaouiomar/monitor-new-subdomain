@@ -9,7 +9,9 @@ __pycache__/
 *$py.class
 .vscode/
 .pytest_cache/
+.mypy_cache/
 
+.env
 # C extensions
 *.so
 *.txt

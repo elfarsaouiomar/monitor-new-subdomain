@@ -2,5 +2,9 @@ venv/
 .github/
 docs/
 README.md/
+venv/
+README.md
 *.log
 .pytest_cache/
+.mypy_cache/
+tests/
