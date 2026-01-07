@@ -11,7 +11,7 @@ h11==0.16.0
 httpcore==0.17.3
 httpx==0.24.1
 httptools==0.6.0
-idna==3.4
+idna==3.7
 iniconfig==2.0.0
 Jinja2==3.1.6
 MarkupSafe==2.0.1
