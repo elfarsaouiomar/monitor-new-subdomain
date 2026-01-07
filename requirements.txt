@@ -4,7 +4,7 @@ anyio==3.7.1
 certifi==2023.7.22
 charset-normalizer==3.2.0
 click==8.1.6
-dnspython==2.4.2
+dnspython==2.6.1
 exceptiongroup==1.1.2
 fastapi==0.104.1
 h11==0.16.0
