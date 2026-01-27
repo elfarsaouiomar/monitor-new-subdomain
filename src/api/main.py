@@ -27,11 +27,11 @@ async def lifespan(app: FastAPI):
     # Start scheduler if enabled
     if settings.ENABLE_SCHEDULER:
         monitoring_scheduler.start()
-        logger.info("✓ Background scheduler started")
+        logger.info("Background scheduler started")
     else:
-        logger.info("⚠ Background scheduler is disabled")
+        logger.info("Background scheduler is disabled")
 
-    logger.info("✓ Application started successfully")
+    logger.info("Application started successfully")
 
     yield
 
@@ -41,10 +41,10 @@ async def lifespan(app: FastAPI):
     # Stop scheduler
     if settings.ENABLE_SCHEDULER:
         monitoring_scheduler.shutdown(wait=True)
-        logger.info("✓ Scheduler shutdown complete")
+        logger.info("Scheduler shutdown complete")
 
     await repository.disconnect()
-    logger.info("✓ Application shutdown complete")
+    logger.info("Application shutdown complete")
 
 
 # Create FastAPI app
@@ -78,9 +78,9 @@ async def root():
         "version": settings.APP_VERSION,
         "status": "running",
         "scheduler_enabled": settings.ENABLE_SCHEDULER,
-        "scheduler_running": monitoring_scheduler.is_running
-        if settings.ENABLE_SCHEDULER
-        else False,
+        "scheduler_running": (
+            monitoring_scheduler.is_running if settings.ENABLE_SCHEDULER else False
+        ),
     }
 
 
@@ -99,7 +99,7 @@ async def health_check():
         "status": "healthy" if db_status == "connected" else "unhealthy",
         "database": db_status,
         "scheduler_enabled": settings.ENABLE_SCHEDULER,
-        "scheduler_running": monitoring_scheduler.is_running
-        if settings.ENABLE_SCHEDULER
-        else False,
+        "scheduler_running": (
+            monitoring_scheduler.is_running if settings.ENABLE_SCHEDULER else False
+        ),
     }

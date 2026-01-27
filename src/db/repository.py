@@ -23,11 +23,12 @@ class MongoRepository:
             self.client = AsyncIOMotorClient(
                 settings.mongodb_url, serverSelectionTimeoutMS=5000
             )
-            # Test connection
-            await self.client.admin.command("ping")
+
             self.collection = self.client[settings.DB_NAME][settings.COLLECTION_NAME]
+           
             # Create index on domain field
             await self.collection.create_index("domain", unique=True)
+           
             logger.info("Connected to MongoDB successfully")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")

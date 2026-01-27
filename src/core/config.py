@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
@@ -45,9 +46,10 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     CORS_ORIGINS: List[str] = ["*"]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+    )
 
     @property
     def mongodb_url(self) -> str:

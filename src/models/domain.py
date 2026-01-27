@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class DomainBase(BaseModel):
@@ -10,7 +10,7 @@ class DomainBase(BaseModel):
 
     domain: str = Field(..., description="Domain name to monitor")
 
-    @validator("domain")
+    @field_validator("domain")
     def validate_domain(cls, v):
         """Validate domain format"""
         v = v.lower().strip()

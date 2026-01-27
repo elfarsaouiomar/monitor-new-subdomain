@@ -47,7 +47,7 @@ class MonitoringScheduler:
         self.scheduler.start()
         self.is_running = True
 
-        logger.info(f"✓ Scheduler started successfully")
+        logger.info(f"Scheduler started successfully")
         logger.info(
             f"  - Monitoring interval: {settings.MONITOR_INTERVAL_MINUTES} minutes"
         )
@@ -60,7 +60,7 @@ class MonitoringScheduler:
             logger.info("Shutting down scheduler...")
             self.scheduler.shutdown(wait=wait)
             self.is_running = False
-            logger.info("✓ Scheduler shutdown complete")
+            logger.info("Scheduler shutdown complete")
 
     def pause(self):
         """Pause the scheduler"""
