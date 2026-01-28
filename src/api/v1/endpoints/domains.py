@@ -5,12 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.dependencies import get_monitoring_service, get_repository
 from src.db.repository import MongoRepository
-from src.models.domain import (
-    DomainCreate,
-    DomainListResponse,
-    DomainResponse,
-    SubdomainResponse,
-)
+from src.models.domain import (DomainCreate, DomainListResponse,
+                               DomainResponse, SubdomainResponse)
 from src.services.monitoring_service import MonitoringService
 
 logger = logging.getLogger(__name__)

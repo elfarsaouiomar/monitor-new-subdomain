@@ -25,10 +25,10 @@ class MongoRepository:
             )
 
             self.collection = self.client[settings.DB_NAME][settings.COLLECTION_NAME]
-           
+
             # Create index on domain field
             await self.collection.create_index("domain", unique=True)
-           
+
             logger.info("Connected to MongoDB successfully")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
