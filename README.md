@@ -345,7 +345,7 @@ Pull requests are welcome!
  * ~~add Docker~~
  * Add snyk
  * add more subdomain resources
-    * Certspotter
+    * ~~Certspotter~~
     * Virustotal
     * ~~Sublist3r~~
     * Facebook **

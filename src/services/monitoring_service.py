@@ -9,6 +9,7 @@ from src.core.config import settings
 from src.db.repository import repository
 from src.models.domain import DNSRecord
 from src.services.crtsh_service import Crtsh
+from src.services.certspotter_service import CertSpotter
 from src.services.notifications_service import Notifications
 from src.services.threatminer_service import Threatminer
 
@@ -20,6 +21,7 @@ class MonitoringService:
 
     def __init__(self):
         self.crtsh = Crtsh()
+        self.certspotter = CertSpotter()
         self.threatminer = Threatminer()
         self.notifications = Notifications()
 
@@ -30,14 +32,16 @@ class MonitoringService:
         # Run discovery in parallel
         loop = asyncio.get_event_loop()
         crtsh_task = loop.run_in_executor(None, self.crtsh.get_subdomains, domain)
+        certspotter_task = loop.run_in_executor(None, self.certspotter.get_subdomains, domain)
         # threatminer_task = loop.run_in_executor(None, self.threatminer.get_subdomains, domain)
 
         try:
             crtsh_results = await crtsh_task
+            certspotter_results = await certspotter_task
             # threatminer_results = await threatminer_task
 
             # Combine and deduplicate
-            all_subdomains = set(crtsh_results + [])
+            all_subdomains = set(crtsh_results + certspotter_results)
             logger.info(f"Found {len(all_subdomains)} subdomains for {domain}")
             return all_subdomains
 
