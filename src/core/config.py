@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -33,11 +34,6 @@ class Settings(BaseSettings):
     MAX_WORKERS: int = 10
     DNS_TIMEOUT: int = 5
 
-    # Monitoring
-    MONITOR_INTERVAL_MINUTES: int = 60
-    MAX_WORKERS: int = 10
-    DNS_TIMEOUT: int = 5
-
     # Scheduler
     ENABLE_SCHEDULER: bool = False
     SCHEDULER_TIMEZONE: str = "UTC"
@@ -46,7 +42,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     CORS_ORIGINS: List[str] = ["*"]
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
     )

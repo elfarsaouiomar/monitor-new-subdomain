@@ -1,12 +1,15 @@
+import logging
 from requests import post
 
 from src.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class Notifications:
     headers = {"Content-Type": "application/json"}
 
-    def telegrame(self, message):
+    def telegram(self, message):
         """Send message to Telegram"""
 
         telegramUrl = (
@@ -22,10 +25,10 @@ class Notifications:
         req = post(url=telegramUrl, params=params, headers=self.headers)
 
         if req.status_code == 429:
-            self.logger.error(f"Api Rate limit: {req.status_code} {req.json()}")
+            logger.error(f"Api Rate limit: {req.status_code} {req.json()}")
 
         if req.status_code != 200:
-            self.logger.error(f"{req.status_code} {req.json()}")
+            logger.error(f"{req.status_code} {req.json()}")
 
     def slack(self, message):
         """send message to slack"""
@@ -35,7 +38,7 @@ class Notifications:
         req = post(url=settings.SLACK_WEBHOOK, json=data, headers=self.headers)
 
         if req.status_code == 429:
-            self.logger.error(f"Api Rate limit: {req.status_code} {req.json()}")
+            logger.error(f"Api Rate limit: {req.status_code} {req.json()}")
 
         if req.status_code != 200:
-            self.logger.error(f"{req.status_code} {req.json()}")
+            logger.error(f"{req.status_code} {req.json()}")
