@@ -27,7 +27,7 @@ pydantic-settings==2.1.0
 pyflakes==3.1.0
 pymongo==4.6.3
 pytest==9.0.3
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 python-multipart==0.0.22
 requests==2.33.0
 sentinels==1.0.0
